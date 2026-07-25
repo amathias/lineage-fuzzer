@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from lineage_fuzzer.allocation import validate_allocation_settings
-from lineage_fuzzer.campaign.context import TABLE_URNS
+from lineage_fuzzer.campaign.context import (
+    TABLE_URNS,
+    baseline_controls_from_context,
+    context_sha256,
+)
 from lineage_fuzzer.campaign.generation import (
     GENERATED_CONTROLS,
     GeneratedControlService,
@@ -26,7 +31,7 @@ from lineage_fuzzer.domain.models import (
     FaultSpecification,
     TargetDescriptor,
 )
-from lineage_fuzzer.pipeline import BASELINE_CONTROLS, CommerceFixture, FixtureSnapshot
+from lineage_fuzzer.pipeline import CommerceFixture, FixtureSnapshot
 from lineage_fuzzer.pipeline.faults import default_fault_adapters
 from lineage_fuzzer.pipeline.models import ControlDefinition
 from lineage_fuzzer.safety import SafetyGate, SafetyViolation
@@ -59,6 +64,7 @@ class CampaignRunner:
         self.artifact_service = GeneratedControlService(artifact_root)
         self.evidence_root = evidence_root.resolve(strict=False)
         self.safety_gate = SafetyGate(settings, workspace_root=self.workspace_root)
+        self.baseline_controls = baseline_controls_from_context(context)
         self.adapters = default_fault_adapters(self.safety_gate)
 
     def plan(self) -> CampaignManifest:
@@ -75,6 +81,7 @@ class CampaignRunner:
     ) -> CampaignExecutionReport:
         manifest = self.plan()
         approval = ApprovalReceipt(
+            approved_at=manifest.created_at,
             manifest_sha256=approval_sha256,
             approved_by=approved_by,
         )
@@ -100,7 +107,7 @@ class CampaignRunner:
                 manifest=manifest,
                 approval=approval,
                 target=target,
-                controls=BASELINE_CONTROLS,
+                controls=self.baseline_controls,
                 safety_checks=controller_safety.checks,
                 execute_artifact=False,
             )
@@ -118,7 +125,7 @@ class CampaignRunner:
                 manifest=manifest,
                 approval=approval,
                 target=target,
-                controls=BASELINE_CONTROLS + GENERATED_CONTROLS,
+                controls=self.baseline_controls + GENERATED_CONTROLS,
                 safety_checks=controller_safety.checks,
                 execute_artifact=True,
             )
@@ -237,7 +244,12 @@ class CampaignRunner:
         return tuple(runs)
 
     def _write_evidence(self, report: CampaignExecutionReport) -> None:
-        self.evidence_root.mkdir(parents=True, exist_ok=True)
+        manifest_digest = report.manifest.sha256
+        context_digest = context_sha256(report.context)
+        run_root = (
+            self.evidence_root / f"m-{manifest_digest[:16]}-c-{context_digest[:16]}"
+        ).resolve(strict=False)
+        run_root.mkdir(parents=True, exist_ok=True)
         payloads: dict[str, Any] = {
             "campaign-manifest.json": report.manifest.model_dump(mode="json"),
             "baseline-coverage.json": report.baseline.model_dump(mode="json"),
@@ -245,10 +257,25 @@ class CampaignRunner:
             "campaign-report.json": report.model_dump(mode="json"),
         }
         for name, payload in payloads.items():
-            path = (self.evidence_root / name).resolve(strict=False)
-            if self.evidence_root not in path.parents:
+            path = (run_root / name).resolve(strict=False)
+            if run_root not in path.parents:
                 raise CampaignExecutionError("campaign evidence path escaped its output root")
-            _atomic_json(path, payload)
+            _immutable_json(path, payload)
+        artifact_source = self.artifact_service.artifact_path.resolve(strict=True)
+        if artifact_source.name != report.generated_artifact.path.name:
+            raise CampaignExecutionError("generated artifact report path is contradictory")
+        if _sha256_file(artifact_source) != report.generated_artifact.sha256:
+            raise CampaignExecutionError(
+                "generated artifact bytes differ from their reported SHA-256"
+            )
+        artifact_destination = (
+            run_root / "generated" / artifact_source.name
+        ).resolve(strict=False)
+        if run_root not in artifact_destination.parents:
+            raise CampaignExecutionError("generated artifact evidence escaped its output root")
+        artifact_destination.parent.mkdir(parents=True, exist_ok=True)
+        _immutable_bytes(artifact_destination, artifact_source.read_bytes())
+
 
 
 def _blast_radius(
@@ -276,12 +303,38 @@ def require_plan_approval(manifest: CampaignManifest, approval_sha256: str) -> N
         raise SafetyViolation("approval is not bound to this campaign manifest")
 
 
-def _atomic_json(path: Path, value: Any) -> None:
-    serialized = json.dumps(value, indent=2, sort_keys=True)
+def _immutable_json(path: Path, value: Any) -> None:
+    serialized = f"{json.dumps(value, indent=2, sort_keys=True)}\n"
+    if path.is_file():
+        if path.read_text(encoding="utf-8") != serialized:
+            raise CampaignExecutionError(
+                "campaign replay would overwrite non-identical immutable evidence"
+            )
+        return
     temporary = path.with_suffix(f"{path.suffix}.tmp")
-    temporary.write_text(f"{serialized}\n", encoding="utf-8", newline="\n")
-    temporary.replace(path)
+    temporary.write_text(serialized, encoding="utf-8", newline="\n")
+    os.replace(temporary, path)
 
+
+def _immutable_bytes(path: Path, value: bytes) -> None:
+    if path.is_file():
+        if path.read_bytes() != value:
+            raise CampaignExecutionError(
+                "campaign replay would overwrite non-identical immutable artifact"
+            )
+        return
+    temporary = path.with_suffix(f"{path.suffix}.tmp")
+    temporary.write_bytes(value)
+    os.replace(temporary, path)
+
+def _sha256_file(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 def _resolve(path: Path, workspace_root: Path) -> Path:
     if not path.is_absolute():

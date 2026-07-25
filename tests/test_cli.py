@@ -33,7 +33,14 @@ def test_show_datahub_plans_prints_manifest_approval_without_secret(
 
     output = capsys.readouterr().out
     payload = json.loads(output)
-    assert len(payload["catalog_fixture"]["approval_sha256"]) == 64
+    seed = payload["catalog_fixture_seed"]
+    reset = payload["catalog_fixture_reset"]
+    assert len(seed["approval_sha256"]) == 64
+    assert len(reset["approval_sha256"]) == 64
+    assert seed["approval_sha256"] != reset["approval_sha256"]
+    assert len(seed["plan"]["dataset_urns"]) == 6
+    assert len(seed["plan"]["lineage_edges"]) == 5
+    assert len(seed["plan"]["assertions"]) == 3
     assert len(payload["assertion_proof"]["approval_sha256"]) == 64
     assert "must-not-be-printed" not in output
 

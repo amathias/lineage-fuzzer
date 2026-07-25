@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from lineage_fuzzer.campaign.context import (
     DAILY_REVENUE_URN,
     RAW_ORDERS_URN,
-    LiveDataHubContextReader,
+    ContextCaptureError,
     demo_context_snapshot,
     downstream_blast_radius,
 )
@@ -16,9 +16,17 @@ from lineage_fuzzer.campaign.generation import (
     GeneratedSQLViolation,
     validate_generated_sql,
 )
-from lineage_fuzzer.campaign.runner import CampaignRunner
+from lineage_fuzzer.campaign.runner import (
+    CampaignExecutionError,
+    CampaignRunner,
+)
 from lineage_fuzzer.config import Settings
 from lineage_fuzzer.safety import SafetyViolation
+from tests.live_contract import (
+    capture_pinned_context,
+    make_settings,
+    prepare_bound_runtime,
+)
 
 
 def _settings(workspace: Path) -> Settings:
@@ -87,12 +95,24 @@ def test_campaign_proves_one_to_three_coverage_and_exact_restoration(
         / "generated"
         / "lineage_fuzzer_generated_controls.sql"
     ).is_file()
+    run_directories = [
+        path
+        for path in (tmp_path / "examples").iterdir()
+        if path.is_dir() and path.name != "generated"
+    ]
+    assert len(run_directories) == 1
     assert {
         "campaign-manifest.json",
         "baseline-coverage.json",
         "final-coverage.json",
         "campaign-report.json",
-    } <= {path.name for path in (tmp_path / "examples").iterdir()}
+        "generated",
+    } == {path.name for path in run_directories[0].iterdir()}
+
+
+    assert (
+        run_directories[0] / "generated" / "lineage_fuzzer_generated_controls.sql"
+    ).is_file()
 
 
 def test_identical_campaign_replays_fault_rows_scores_and_digest(tmp_path: Path) -> None:
@@ -110,6 +130,21 @@ def test_identical_campaign_replays_fault_rows_scores_and_digest(tmp_path: Path)
     ]
     assert first.baseline.matrix == second.baseline.matrix
     assert first.improved.matrix == second.improved.matrix
+
+
+def test_campaign_evidence_refuses_nonidentical_overwrite(tmp_path: Path) -> None:
+    runner = _runner(tmp_path)
+    runner.run(approval_sha256=runner.plan().sha256)
+    run_directory = next(
+        path
+        for path in (tmp_path / "examples").iterdir()
+        if path.is_dir() and path.name != "generated"
+    )
+    report_path = run_directory / "campaign-report.json"
+    report_path.write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(CampaignExecutionError, match="non-identical immutable"):
+        runner.run(approval_sha256=runner.plan().sha256)
 
 
 def test_campaign_rejects_wrong_approval_before_fixture_mutation(tmp_path: Path) -> None:
@@ -143,63 +178,46 @@ def test_demo_context_predicts_all_downstream_consumers() -> None:
     assert len(predicted) == 5
 
 
-class _FakeMCP:
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, dict[str, Any]]] = []
-
-    async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
-        self.calls.append((name, arguments))
-        if name == "get_entities":
-            return [{"urn": RAW_ORDERS_URN, "owners": ["urn:li:corpuser:test"]}]
-        if name == "list_schema_fields":
-            return {
-                "urn": RAW_ORDERS_URN,
-                "fields": [{"fieldPath": "amount_cents", "nativeDataType": "BIGINT"}],
-            }
-        if name == "get_lineage":
-            return {
-                "downstreams": {
-                    "searchResults": [
-                        {"entity": {"urn": DAILY_REVENUE_URN}, "degree": 2}
-                    ]
-                }
-            }
-        raise AssertionError(name)
-
-
-class _FakeAssertions:
-    async def assertions_for_dataset(self, dataset_urn: str) -> dict[str, Any]:
-        return {"dataset": {"urn": dataset_urn, "assertions": {"assertions": []}}}
-
-
-@pytest.mark.asyncio
-async def test_live_context_reader_uses_official_mcp_context_tools(
+def test_live_context_derives_baseline_controls_from_captured_assertions(
     tmp_path: Path,
 ) -> None:
-    mcp = _FakeMCP()
-    context = await LiveDataHubContextReader(
-        _settings(tmp_path),
-        mcp,
-        _FakeAssertions(),
-    ).capture()
+    settings = make_settings(tmp_path)
+    prepare_bound_runtime(tmp_path, settings)
+    context = asyncio.run(capture_pinned_context(tmp_path, settings))
 
-    assert context.source == "datahub-mcp-live"
-    assert context.lineage[0].upstream_urn == RAW_ORDERS_URN
-    assert context.lineage[0].downstream_urn == DAILY_REVENUE_URN
-    assert mcp.calls == [
-        ("get_entities", {"urns": [RAW_ORDERS_URN]}),
-        (
-            "list_schema_fields",
-            {"urn": RAW_ORDERS_URN, "limit": 100, "offset": 0},
-        ),
-        (
-            "get_lineage",
-            {
-                "urn": RAW_ORDERS_URN,
-                "upstream": False,
-                "max_hops": 3,
-                "max_results": 100,
-                "offset": 0,
-            },
-        ),
-    ]
+    runner = CampaignRunner(
+        settings,
+        context,
+        workspace_root=tmp_path,
+        artifact_root=tmp_path / "generated",
+        evidence_root=tmp_path / "evidence",
+    )
+
+    assert tuple(control.control_id for control in runner.baseline_controls) == (
+        "orders_customer_id_not_null",
+        "orders_order_id_unique",
+        "daily_revenue_non_negative",
+    )
+
+
+def test_live_context_rejects_contradictory_baseline_control_mapping(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    prepare_bound_runtime(tmp_path, settings)
+    context = asyncio.run(capture_pinned_context(tmp_path, settings))
+    forged_assertions = list(context.assertions)
+    forged_assertions[0] = {
+        **forged_assertions[0],
+        "logic": "SELECT 0",
+    }
+    forged = context.model_copy(update={"assertions": tuple(forged_assertions)})
+
+    with pytest.raises(ContextCaptureError, match="assertion metadata"):
+        CampaignRunner(
+            settings,
+            forged,
+            workspace_root=tmp_path,
+            artifact_root=tmp_path / "generated",
+            evidence_root=tmp_path / "evidence",
+        )

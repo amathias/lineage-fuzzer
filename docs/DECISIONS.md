@@ -133,3 +133,52 @@ capture command reads entity, schema, downstream lineage, and assertions through
 GraphQL, persists only a typed snapshot marked `datahub-mcp-live`, and binds its digest into a new
 manifest approval. The API refuses to load a context file without that live marker and lineage.
 This prevents offline fixture topology from being presented as newly captured live metadata.
+
+## ADR-010: One exact catalog contract drives seed, capture, controls, and reset
+
+- **Status:** Accepted
+- **Date:** 2026-07-25
+
+The live campaign allocation is six fixed `fuzzer.*` DuckDB/DEV dataset URNs, five fixed lineage
+edges, six complete schemas, one owner, one domain, two tags, `sandbox=true`, active status, and
+three fixed custom assertion URNs. One typed contract generates the OpenAPI aspect writes,
+GraphQL assertion writes, immutable seed plan, reset allowlist, live-capture validation, local
+topology, UI graph, and baseline control mapping.
+
+Seed and reset have different approval SHA-256 values. Seed idempotently restores every dataset
+and baseline assertion to active state. Reset invalidates the current live-context snapshot and
+receipt before its first write, soft-deletes only the six dataset URNs and three baseline
+assertions, retains Domain and Tags, and records started/failed/completed receipts. The separate
+live-proof assertion remains outside that reset contract.
+
+Live capture reads all six entities in one MCP call, reads each schema, reads direct one-hop
+lineage from each dataset, and queries assertions for every dataset. It fails on a missing field,
+edge, owner, domain, tag, marker, active status, assertion, or expected URN. It preserves safe raw
+response digests and MCP tool schemas in the typed provenance. Executable baseline controls in
+live mode are derived only from the exact captured assertion URN/type/entity/logic mapping.
+
+This eliminates the earlier failure mode where changing a local snapshot's source label could
+make it appear live.
+
+## ADR-011: Public campaigns require current bound context and immutable run evidence
+
+- **Status:** Accepted
+- **Date:** 2026-07-25
+
+In `APP_ENV=hackathon`, readiness and campaign construction require
+`LINEAGE_FUZZER_CANDIDATE_SHA`, a complete `datahub-mcp-live` snapshot, and its adjacent receipt.
+The receipt binds the context digest to the exact candidate commit, verified catalog seed state,
+catalog plan digest, and local fixture seed/checksums. Any reset, reseed, candidate change, catalog
+state change, or fixture drift invalidates the context. The app does not silently substitute local
+topology, and the judge page keeps its run control disabled until the live gate and the explicit
+injection flag both pass.
+
+Campaign JSON evidence and a copy of the generated SQL artifact are stored under a directory
+named with both the manifest and context SHA-256 values. Replays may reuse only byte-identical
+files; a differing byte raises an error rather than overwriting evidence. Approval time is bound
+to the deterministic manifest time so a true replay remains byte-identical.
+
+The release verifier operates on `git archive`, builds and reinstalls the wheel in a fresh virtual
+environment, imports the pinned DataHub clients, runs tests/Ruff/secret scan, seeds and checks the
+fixture, and exercises the judge UI. This verifies distributable source rather than accidental
+working-tree state.

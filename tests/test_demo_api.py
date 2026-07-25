@@ -48,8 +48,15 @@ def test_judge_page_and_plan_expose_the_fixed_campaign() -> None:
     assert plan.status_code == 200
     payload = plan.json()
     assert payload["approval_sha256"] == runner.manifest.sha256
+    assert "Separate live-proof baseline" in page.text
+    assert "Verified candidate" not in page.text
+    assert "button.disabled = !plan.run_enabled" in page.text
+    assert "renderGraph(plan.graph)" in page.text
     assert payload["context_source"] == "local-fixture-topology"
     assert len(payload["manifest"]["faults"]) == 3
+    assert len(payload["graph"]["nodes"]) == 6
+    assert len(payload["graph"]["edges"]) == 5
+    assert payload["run_enabled"] is False
 
 
 def test_judge_run_passes_the_exact_approved_digest() -> None:

@@ -48,9 +48,24 @@ class DataHubMCPClient:
         self._timeout_seconds = timeout_seconds
 
     async def list_tools(self) -> tuple[str, ...]:
+        return tuple(tool["name"] for tool in await self.describe_tools())
+
+    async def describe_tools(self) -> tuple[dict[str, Any], ...]:
         async with self._session() as session:
             response = await session.list_tools()
-            return tuple(sorted(tool.name for tool in response.tools))
+            return tuple(
+                sorted(
+                    (
+                        {
+                            "name": tool.name,
+                            "inputSchema": tool.inputSchema,
+                            "outputSchema": getattr(tool, "outputSchema", None),
+                        }
+                        for tool in response.tools
+                    ),
+                    key=lambda tool: tool["name"],
+                )
+            )
 
     async def probe(self) -> DataHubMCPProbe:
         tools = await self.list_tools()

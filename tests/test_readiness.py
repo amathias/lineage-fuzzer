@@ -8,9 +8,17 @@ import pytest
 from fastapi.testclient import TestClient
 
 from lineage_fuzzer.api import create_app
+from lineage_fuzzer.campaign.context import save_live_context_snapshot
 from lineage_fuzzer.config import Settings
 from lineage_fuzzer.pipeline import CommerceFixture
 from lineage_fuzzer.readiness import ReadinessCheck, ReadinessReport, ReadinessService
+from tests.live_contract import (
+    capture_pinned_context,
+    prepare_bound_runtime,
+)
+from tests.live_contract import (
+    make_settings as make_live_settings,
+)
 
 
 @dataclass
@@ -134,6 +142,7 @@ async def test_ready_only_after_local_remote_and_catalog_checks(
         "gms",
         "mcp",
         "catalog_allocation",
+        "campaign_context",
     }
     assert all(check.ready for check in report.checks.values())
     assert mcp.calls == [
@@ -202,7 +211,56 @@ async def test_wrong_project_prefix_fails_before_network(
     assert not report.checks["fixture"].ready
 
 
+@pytest.mark.asyncio
+async def test_hackathon_readiness_requires_live_context_receipt(
+    seeded_workspace: Path,
+) -> None:
+    settings = make_settings(seeded_workspace).model_copy(
+        update={
+            "environment": "hackathon",
+            "candidate_sha": "a" * 40,
+        }
+    )
+
+    report = await ReadinessService(
+        settings,
+        workspace_root=seeded_workspace,
+        mcp_factory=lambda _: FakeMCP(catalog_entity(settings)),
+        graphql_factory=lambda _: FakeGraphQL(),
+    ).check()
+
+    assert not report.ready
+    assert not report.checks["campaign_context"].ready
+
+
+@pytest.mark.asyncio
+async def test_hackathon_readiness_accepts_current_bound_live_context(
+    tmp_path: Path,
+) -> None:
+    settings = make_live_settings(tmp_path, environment="hackathon").model_copy(
+        update={"datahub_token": "unit-test-only-placeholder"}
+    )
+    prepare_bound_runtime(tmp_path, settings)
+    context = await capture_pinned_context(tmp_path, settings)
+    context_path = save_live_context_snapshot(
+        tmp_path / ".lineage-fuzzer" / "campaign-context.json",
+        context,
+    )
+    settings = settings.model_copy(update={"campaign_context_file": context_path})
+
+    report = await ReadinessService(
+        settings,
+        workspace_root=tmp_path,
+        mcp_factory=lambda _: FakeMCP(catalog_entity(settings)),
+        graphql_factory=lambda _: FakeGraphQL(),
+    ).check()
+
+    assert report.ready
+    assert report.checks["campaign_context"].ready
+    assert "6 datasets and 5 edges" in report.checks["campaign_context"].detail
+
 def test_readiness_endpoint_returns_200_only_for_ready_report() -> None:
+
     ready_report = ReadinessReport(
         status="ready",
         checks={"fixture": ReadinessCheck(ready=True, detail="verified")},

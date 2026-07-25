@@ -77,6 +77,21 @@ class LineageEdge(BaseModel):
     downstream_urn: str
 
 
+class ContextProvenance(BaseModel):
+    """Token-free binding between a live context and its exact runtime inputs."""
+
+    model_config = ConfigDict(frozen=True)
+
+    candidate_sha: str = Field(pattern=r"^[0-9a-f]{40}$")
+    catalog_plan_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    catalog_state_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    fixture_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    tool_schema_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    raw_response_sha256: dict[str, str]
+    tool_schemas: tuple[dict[str, Any], ...]
+    mcp_tools: tuple[str, ...]
+
+
 class DataHubContextSnapshot(BaseModel):
     """Immutable DataHub evidence used to derive a campaign."""
 
@@ -89,6 +104,7 @@ class DataHubContextSnapshot(BaseModel):
     assertions: tuple[dict[str, Any], ...] = ()
 
 
+    provenance: ContextProvenance | None = None
 class CampaignManifest(BaseModel):
     """Replayable input to deterministic injection and scoring."""
 

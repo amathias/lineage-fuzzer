@@ -1,75 +1,77 @@
 # Lineage Fuzzer
 
-Lineage Fuzzer now includes the complete deterministic vertical slice: three sandbox-only
-semantic fault adapters, lineage-predicted versus checksum-observed blast radius, a measured
-1/3 baseline, a generated and validated SQL control artifact, a 3/3 rerun, verified restoration,
-and a single-screen judge demo.
+Lineage Fuzzer is a DataHub-powered semantic chaos agent for data reliability. It reads one exact
+six-dataset sandbox graph, predicts downstream impact, injects three deterministic faults into a
+disposable DuckDB fixture, measures which cataloged controls detect them, generates the missing
+read-only SQL tests, reruns the same campaign, and verifies complete restoration.
 
-The live DataHub catalog/assertion read-write-re-read-restore proof remains preserved separately.
-See [the judge runbook](./docs/JUDGE_DEMO.md) for the exact local commands, approval digest,
-evidence map, and live-context capture flow.
+The judge flow demonstrates:
+
+- six catalog datasets with complete schemas, ownership, domain, project/sandbox tags, and
+  `sandbox=true`;
+- five exact lineage edges and three persistent baseline custom assertions;
+- numeric-scale, partition-staleness, and null-density fault adapters;
+- predicted-versus-observed checksum blast radius;
+- baseline coverage of 1/3 and improved coverage of 3/3;
+- a generated, validated, runnable SQL artifact;
+- restoration between every fault and after the campaign; and
+- immutable evidence keyed by both manifest and context digests.
+
+## Safety boundary
+
+Fault injection is default-deny. The only mutable physical target is
+`demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb`, and the only accepted catalog namespace is
+`fuzzer.*` on DuckDB/DEV with the exact Lineage Fuzzer domain, owner, tags, and marker. Catalog
+seed/reset operations require separate immutable approval digests. Reset soft-deletes only the six
+allowlisted datasets and three baseline assertions; the earlier proof assertion, domain, and tags
+are outside its delete set.
+
+In `APP_ENV=hackathon`, readiness and the judge campaign additionally require a saved
+`datahub-mcp-live` context plus its receipt. The receipt must match the running candidate SHA, the
+current verified catalog seed, and the current local fixture checksums. Local fixture topology
+cannot become live evidence by changing a source label.
+
+## Local verification
 
 ```powershell
-$env:PYTHONPATH = "src"
-.venv\Scripts\python.exe -m lineage_fuzzer.demo_cli plan
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[dev,datahub]"
+.venv\Scripts\python.exe -m pytest -q
+.venv\Scripts\python.exe -m ruff check .
+.venv\Scripts\python.exe scripts\scan_secrets.py
+```
+
+Run the offline, explicitly local judge demo:
+
+```powershell
 $env:LINEAGE_FUZZER_INJECTION_ENABLED = "true"
+.venv\Scripts\python.exe -m lineage_fuzzer.pipeline_cli seed
 .venv\Scripts\lineage-fuzzer.exe serve --host 127.0.0.1 --port 8104
 ```
 
-Open `http://127.0.0.1:8104`, review the immutable digest, and approve the campaign.
+Open `http://127.0.0.1:8104`. The page remains honest about
+`context_source=local-fixture-topology`. See [docs/JUDGE_DEMO.md](docs/JUDGE_DEMO.md) for the
+approval-bound live sequence and [COORDINATOR_HANDOFF.md](COORDINATOR_HANDOFF.md) for the current
+candidate and preserved proof evidence.
 
-## Submission title
+## Reproducible source-package verification
 
-**Lineage Fuzzer: Chaos Engineering for the Data Graph**
+After committing, verify the exact archive rather than the working tree:
 
-## Tagline
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\verify_archive.ps1 -Commit HEAD
+```
 
-Break data safely before bad data breaks production.
+The verifier creates a fresh Git archive, performs a tracked-file secret scan, creates an isolated
+environment, installs all pinned dependencies, builds and reinstalls the wheel, checks imports,
+runs tests and Ruff, seeds and checks the fixture, and exercises the judge page and plan endpoint.
 
-## One-sentence pitch
+## Submission
 
-Lineage Fuzzer reads DataHub lineage, schemas, and existing assertions to generate reversible semantic faults, injects them into isolated data fixtures, measures which controls detect them, generates missing tests, and records the improved coverage.
+**Title:** Lineage Fuzzer: Chaos Engineering for the Data Graph
 
-## Basic idea
+**Tagline:** Break data safely before bad data breaks production.
 
-Infrastructure teams use chaos engineering to prove that systems survive failures. Data teams mostly wait for silent semantic failures—unit changes, stale partitions, null surges, broken joins, schema drift, or missing classifications—to reach production.
-
-Lineage Fuzzer converts the DataHub graph into an intelligent fault campaign. The agent selects high-impact fault locations, predicts the blast radius, performs reversible injections in a sandbox, observes the existing quality controls, explains gaps, generates concrete assertions or data tests, reruns the campaign, and writes coverage results back to DataHub.
-
-## Why it can win
-
-- **Novel combination:** Lineage-guided semantic fault injection is less crowded than generic infrastructure chaos or data observability.
-- **DataHub is indispensable:** Lineage selects valuable targets and predicts affected consumers; schemas and assertions shape the tests.
-- **Excellent before-and-after demo:** Detection coverage visibly improves from one of three faults to three of three.
-- **Code-generation evidence:** The repository can include generated dbt tests, SQL assertions, or DataHub assertion definitions.
-- **Safe implementation:** All destructive behavior is confined to disposable fixtures.
-
-## Primary user
-
-Data reliability engineers, analytics engineers, data platform teams, and owners of critical data products.
-
-## Challenge category
-
-Primary: **Agents That Do Real Work**  
-Secondary: **Metadata-Aware Code Generation & Development**
-
-## The memorable demo moment
-
-The first campaign injects three silent faults and existing monitors catch only one. The agent uses lineage context to generate two missing tests, reruns the exact campaign, catches all three, and writes the new resilience score into DataHub.
-
-## Name rationale
-
-“Lineage Fuzzer” is direct, technically credible, and easy for judges to remember. The subtitle makes clear that this is data chaos engineering, not a conventional code-security fuzzer.
-
-## Workspace map
-
-- [Judge demo runbook](./docs/JUDGE_DEMO.md)
-- [Project brief](./PROJECT_BRIEF.md)
-- [Build plan](./BUILD_PLAN.md)
-- [Demo and submission](./DEMO_AND_SUBMISSION.md)
-- [Hackathon rules](./HACKATHON_RULES.md)
-- [AI builder instructions](./AGENTS.md)
-
-## First command for the builder
-
-Read `AGENTS.md`, `HACKATHON_RULES.md`, and `PROJECT_BRIEF.md` completely before choosing the implementation stack or writing code.
+The previously completed live custom-assertion write/result/re-read/restore proof is preserved as
+separate coordinator evidence. This repository does not claim that the expanded six-entity
+campaign has been exercised live until the coordinator performs the documented promotion gate.

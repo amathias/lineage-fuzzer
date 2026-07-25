@@ -17,6 +17,7 @@ from lineage_fuzzer.datahub.catalog import DataHubCatalogClient, DataHubCatalogE
 from lineage_fuzzer.datahub.fixture_catalog import (
     CatalogFixtureService,
     catalog_plan,
+    catalog_reset_plan,
 )
 from lineage_fuzzer.datahub.graphql import DataHubGraphQLClient
 from lineage_fuzzer.datahub.mcp import DataHubMCPClient
@@ -55,7 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         (
             "reset-datahub-fixture",
-            "Deterministically replay the exact allocated catalog fixture aspects",
+            "Soft-delete only the exact allocated datasets and baseline assertions",
         ),
         (
             "run-datahub-proof",
@@ -138,11 +139,16 @@ def _require_datahub_token(settings: Settings) -> None:
 
 def _show_datahub_plans(settings: Settings) -> int:
     validate_allocation_settings(settings, workspace_root=Path.cwd())
-    fixture_plan = catalog_plan(settings)
+    seed_plan = catalog_plan(settings)
+    reset_plan = catalog_reset_plan(settings)
     output = {
-        "catalog_fixture": {
-            "approval_sha256": sha256_json(fixture_plan),
-            "plan": fixture_plan,
+        "catalog_fixture_seed": {
+            "approval_sha256": sha256_json(seed_plan),
+            "plan": seed_plan,
+        },
+        "catalog_fixture_reset": {
+            "approval_sha256": sha256_json(reset_plan),
+            "plan": reset_plan,
         },
         "assertion_proof": {
             "approval_sha256": DEFAULT_PROOF_PLAN.sha256,
@@ -160,14 +166,23 @@ async def _catalog_fixture(
     reset: bool,
 ) -> int:
     _require_datahub_token(settings)
-    async with DataHubCatalogClient(
-        settings.datahub_gms_url,
-        token=settings.datahub_token,
-        timeout_seconds=settings.datahub_mcp_timeout_seconds,
-    ) as catalog:
+    graphql_endpoint = f"{settings.datahub_gms_url.rstrip('/')}/api/graphql"
+    async with (
+        DataHubCatalogClient(
+            settings.datahub_gms_url,
+            token=settings.datahub_token,
+            timeout_seconds=settings.datahub_mcp_timeout_seconds,
+        ) as catalog,
+        DataHubGraphQLClient(
+            graphql_endpoint,
+            token=settings.datahub_token,
+            timeout_seconds=settings.datahub_mcp_timeout_seconds,
+        ) as graphql,
+    ):
         service = CatalogFixtureService(
             settings,
             catalog,
+            graphql,
             workspace_root=Path.cwd(),
         )
         result = (

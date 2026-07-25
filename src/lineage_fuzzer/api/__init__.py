@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lineage_fuzzer import __version__
 from lineage_fuzzer.campaign.context import (
+    ContextCaptureError,
     context_sha256,
     demo_context_snapshot,
     load_live_context_snapshot,
@@ -58,8 +59,17 @@ def create_app(
         version=__version__,
         description="Safe, deterministic semantic data fault campaigns powered by DataHub.",
     )
-    app.state.readiness_service = readiness_service or ReadinessService(resolved_settings)
-    app.state.campaign_runner = campaign_runner or _default_campaign_runner(resolved_settings)
+    app.state.readiness_service = readiness_service or ReadinessService(
+        resolved_settings,
+        workspace_root=Path.cwd(),
+    )
+    app.state.campaign_error = None
+    try:
+        app.state.campaign_runner = campaign_runner or _default_campaign_runner(resolved_settings)
+    except ContextCaptureError as exc:
+        app.state.campaign_runner = None
+        app.state.campaign_error = str(exc)
+    app.state.settings = resolved_settings
     app.state.campaign_lock = asyncio.Lock()
 
     @app.get("/", response_class=HTMLResponse)
@@ -81,10 +91,37 @@ def create_app(
 
     @app.get("/api/demo/plan")
     async def campaign_plan() -> dict[str, Any]:
-        manifest = app.state.campaign_runner.plan()
-        context = app.state.campaign_runner.context
+        runner = app.state.campaign_runner
+        if runner is None:
+            raise HTTPException(status_code=503, detail=app.state.campaign_error)
+        manifest = runner.plan()
+        context = runner.context
+        if resolved_settings.is_hackathon and context.source != "datahub-mcp-live":
+            raise HTTPException(
+                status_code=503,
+                detail="hackathon mode requires current verified live DataHub context",
+            )
+        run_enabled = resolved_settings.injection_enabled and (
+            not resolved_settings.is_hackathon or context.source == "datahub-mcp-live"
+        )
         return {
             "manifest": manifest.model_dump(mode="json"),
+            "run_enabled": run_enabled,
+            "live_context_required": resolved_settings.is_hackathon,
+            "candidate_sha": resolved_settings.candidate_sha,
+            "graph": {
+                "nodes": [
+                    {
+                        "urn": entity["urn"],
+                        "name": entity["name"],
+                        "schema_fields": entity["schemaFields"],
+                    }
+                    for entity in context.entities
+                ],
+                "edges": [
+                    edge.model_dump(mode="json") for edge in context.lineage
+                ],
+            },
             "approval_sha256": manifest.sha256,
             "context_source": context.source,
             "context_sha256": context_sha256(context),
@@ -92,6 +129,13 @@ def create_app(
 
     @app.post("/api/demo/run")
     async def campaign_run(request: CampaignRunRequest) -> dict[str, Any]:
+        runner = app.state.campaign_runner
+        if runner is None:
+            raise HTTPException(status_code=503, detail=app.state.campaign_error)
+        if resolved_settings.is_hackathon and runner.context.source != "datahub-mcp-live":
+            raise HTTPException(
+                status_code=503, detail="verified live context is required"
+            )
         lock: asyncio.Lock = app.state.campaign_lock
         if lock.locked():
             raise HTTPException(
@@ -102,7 +146,7 @@ def create_app(
         try:
             try:
                 report = await asyncio.to_thread(
-                    app.state.campaign_runner.run,
+                    runner.run,
                     approval_sha256=request.approval_sha256,
                     approved_by=request.approved_by,
                 )
@@ -123,7 +167,15 @@ def _default_campaign_runner(settings: Settings) -> CampaignRunner:
     if settings.campaign_context_file is not None:
         context_path = settings.campaign_context_file
         context_path = context_path if context_path.is_absolute() else workspace_root / context_path
-        context = load_live_context_snapshot(context_path)
+        context = load_live_context_snapshot(
+            context_path,
+            settings=settings,
+            workspace_root=workspace_root,
+        )
+    elif settings.is_hackathon:
+        raise ContextCaptureError(
+            "hackathon mode requires LINEAGE_FUZZER_CONTEXT_FILE and its receipt"
+        )
     state_root = settings.state_dir
     state_root = state_root if state_root.is_absolute() else workspace_root / state_root
     return CampaignRunner(

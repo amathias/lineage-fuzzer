@@ -115,7 +115,12 @@ async def _capture_live_context(
             token=settings.datahub_token,
             timeout_seconds=settings.datahub_mcp_timeout_seconds,
         ) as graphql:
-            context = await LiveDataHubContextReader(settings, mcp, graphql).capture()
+            context = await LiveDataHubContextReader(
+                settings,
+                mcp,
+                graphql,
+                workspace_root=workspace_root,
+            ).capture()
     except ContextCaptureError:
         raise
     except Exception as exc:
@@ -142,10 +147,18 @@ def _runner(settings: Settings, args: argparse.Namespace) -> CampaignRunner:
     )
     configured_context = args.context_file or settings.campaign_context_file
     context = (
-        load_live_context_snapshot(_resolve(configured_context, workspace_root))
+        load_live_context_snapshot(
+            _resolve(configured_context, workspace_root),
+            settings=settings,
+            workspace_root=workspace_root,
+        )
         if configured_context is not None
         else demo_context_snapshot()
     )
+    if settings.is_hackathon and configured_context is None:
+        raise ContextCaptureError(
+            "hackathon mode requires a current candidate-bound live context receipt"
+        )
     evidence_root = (
         _resolve(args.evidence_root, workspace_root)
         if args.evidence_root

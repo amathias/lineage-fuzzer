@@ -51,7 +51,16 @@ class ReceiptStore:
         plan_sha256: str,
         payload: dict[str, Any],
     ) -> Path:
-        if phase not in {"before", "write", "after", "restore", "catalog"}:
+        if phase not in {
+            "before",
+            "write",
+            "after",
+            "restore",
+            "catalog",
+            "started",
+            "failed",
+            "completed",
+        }:
             raise ReceiptPathViolation("receipt phase is not allowlisted")
         self._run_dir.mkdir(parents=True, exist_ok=True)
         envelope = {

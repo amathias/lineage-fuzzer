@@ -3,6 +3,7 @@
 from lineage_fuzzer.domain.models import (
     ApprovalReceipt,
     CampaignManifest,
+    ContextProvenance,
     DataHubContextSnapshot,
     FaultKind,
     FaultSpecification,
@@ -13,6 +14,7 @@ from lineage_fuzzer.domain.models import (
 __all__ = [
     "ApprovalReceipt",
     "CampaignManifest",
+    "ContextProvenance",
     "DataHubContextSnapshot",
     "FaultKind",
     "FaultSpecification",

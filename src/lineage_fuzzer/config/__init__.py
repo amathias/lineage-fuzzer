@@ -38,6 +38,11 @@ class Settings(BaseSettings):
         None,
         alias="LINEAGE_FUZZER_CONTEXT_FILE",
     )
+    candidate_sha: str | None = Field(
+        None,
+        pattern=r"^[0-9a-f]{40}$",
+        alias="LINEAGE_FUZZER_CANDIDATE_SHA",
+    )
     fixture_root: Path = Field(
         Path("demo/fixtures/lineage-fuzzer"),
         alias="DEMO_FIXTURE_ROOT",
@@ -89,6 +94,10 @@ class Settings(BaseSettings):
         gt=0,
         alias="DATAHUB_MCP_TIMEOUT_SECONDS",
     )
+
+    @property
+    def is_hackathon(self) -> bool:
+        return self.environment.casefold() == "hackathon"
 
 
 __all__ = ["Settings"]

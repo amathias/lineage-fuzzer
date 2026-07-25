@@ -13,6 +13,10 @@ from lineage_fuzzer.allocation import (
     validate_allocation_settings,
     validate_dataset_urn,
 )
+from lineage_fuzzer.campaign.context import (
+    ContextCaptureError,
+    load_live_context_snapshot,
+)
 from lineage_fuzzer.config import Settings
 from lineage_fuzzer.datahub.graphql import DataHubGraphQLClient
 from lineage_fuzzer.datahub.mcp import DataHubMCPClient
@@ -76,6 +80,7 @@ class ReadinessService:
         database_path = self._check_allocation(checks)
         self._check_state(checks)
         self._check_fixture(checks, database_path)
+        self._check_campaign_context(checks)
 
         if database_path is None:
             checks["gms"] = ReadinessCheck(
@@ -189,6 +194,47 @@ class ReadinessService:
             ready=True,
             detail=f"seed {evidence.seed} and {len(evidence.tables)} checksums verified read-only",
         )
+
+    def _check_campaign_context(
+        self,
+        checks: dict[str, ReadinessCheck],
+    ) -> None:
+        if not self.settings.is_hackathon:
+            checks["campaign_context"] = ReadinessCheck(
+                ready=True,
+                detail="candidate-bound live context is not required outside hackathon mode",
+            )
+            return
+        context_file = self.settings.campaign_context_file
+        if context_file is None:
+            checks["campaign_context"] = ReadinessCheck(
+                ready=False,
+                detail="LINEAGE_FUZZER_CONTEXT_FILE is required in hackathon mode",
+            )
+            return
+        path = context_file
+        if not path.is_absolute():
+            path = self.workspace_root / path
+        try:
+            context = load_live_context_snapshot(
+                path,
+                settings=self.settings,
+                workspace_root=self.workspace_root,
+            )
+        except ContextCaptureError:
+            checks["campaign_context"] = ReadinessCheck(
+                ready=False,
+                detail="live context receipt failed candidate, catalog, or fixture binding",
+            )
+            return
+        checks["campaign_context"] = ReadinessCheck(
+            ready=True,
+            detail=(
+                "current candidate-bound datahub-mcp-live context receipt verified "
+                f"for {len(context.entities)} datasets and {len(context.lineage)} edges"
+            ),
+        )
+
 
     async def _check_datahub(self, checks: dict[str, ReadinessCheck]) -> None:
         try:
