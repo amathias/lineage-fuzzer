@@ -36,7 +36,7 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `code verified; live DataHub proof blocked` |
+| Status | `code verified; live DataHub proof pending coordinator run` |
 | Milestone | Truthful readiness and fail-closed allocation enforcement |
 | Verified commit/artifact | `d4dd9f2084a4c9a773c1ec35e36565ce881ea5a0` |
 | Build command | `python -m pip install -e ".[dev]"` |
@@ -52,9 +52,9 @@ live EC2 host from this project chat.
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | MCP client and checks implemented; live receipt blocked until the coordinator supplies the service credential out of band |
+| DataHub read | MCP client and checks implemented; live receipt pending coordinator promotion and guarded shared-host run |
 | DataHub writeback | GraphQL client implemented; no live write/re-read/restore receipt claimed |
-| Blockers | Out-of-band DataHub service credential, live tunnel verification, receipt run, and coordinator promotion |
+| Blockers | Coordinator promotion and guarded shared-host read/write/re-read/restore receipt run |
 | Evidence produced | 42 passing tests; Ruff clean; local readiness 503 proves missing state/token honestly; fixture checksum and exception-safe restoration evidence |
 
 ## Required environment variables
@@ -119,8 +119,12 @@ The live DataHub proof is **blocked, not simulated**:
 - No before/write/after/restore receipts exist yet.
 - The public deployment is still commit `a7d2d51e1f9cd3213d5f822e08c22d3d9c477e33`;
   `/api/readiness` remains 404 there until the coordinator promotes the verified artifact.
-- The coordinator will issue a verification-only follow-up after providing the credential out of
-  band. This project chat will use local GMS and MCP SSM tunnels and will not deploy.
+- The coordinator owns promotion and guarded shared-host verification. This project chat did not
+  open tunnels, access EC2, or deploy.
+
+After this local milestone, the coordinator confirmed that a dedicated service credential is
+stored in AWS and loaded into the live services. This project chat did not request, receive, print,
+or access that credential. Live receipts remain pending the coordinator-owned guarded host run.
 
 ## Resource and deployment notes
 
