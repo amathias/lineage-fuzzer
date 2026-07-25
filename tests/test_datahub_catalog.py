@@ -105,13 +105,102 @@ async def test_openapi_client_uses_v3_aspect_wire_format() -> None:
             "urn": DATASET_URN,
             "status": {
                 "value": {"removed": False},
-                "systemMetadata": None,
                 "headers": {},
             },
         }
     ]
     assert captured[1].url == "http://datahub.test/openapi/v3/entity/dataset/batchGet"
     assert json.loads(captured[1].content) == [{"urn": DATASET_URN, "status": {}}]
+
+
+@pytest.mark.asyncio
+async def test_openapi_client_omits_system_metadata_for_domain_and_other_aspects() -> None:
+    captured: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(200, json={})
+
+    client = DataHubCatalogClient(
+        "http://datahub.test/",
+        transport=httpx.MockTransport(handler),
+    )
+    cases = [
+        (
+            "domain",
+            DOMAIN_URN,
+            "domainProperties",
+            {
+                "customProperties": {"project_slug": "lineage-fuzzer"},
+                "name": "Demo / Lineage Fuzzer",
+                "description": "Disposable Lineage Fuzzer hackathon fixture.",
+            },
+        ),
+        (
+            "tag",
+            PROJECT_TAG_URN,
+            "tagProperties",
+            {
+                "name": "project-lineage-fuzzer",
+                "description": "Lineage Fuzzer project allocation.",
+            },
+        ),
+        (
+            "dataset",
+            DATASET_URN,
+            "datasetProperties",
+            {
+                "customProperties": {
+                    "sandbox": "true",
+                    "project_slug": "lineage-fuzzer",
+                },
+                "name": "fuzzer.raw.orders",
+                "description": "Disposable Lineage Fuzzer hackathon fixture.",
+                "tags": [],
+            },
+        ),
+        (
+            "dataset",
+            DATASET_URN,
+            "globalTags",
+            {
+                "tags": [
+                    {"tag": PROJECT_TAG_URN},
+                    {"tag": SANDBOX_TAG_URN},
+                ]
+            },
+        ),
+        ("dataset", DATASET_URN, "domains", {"domains": [DOMAIN_URN]}),
+    ]
+
+    for entity_type, entity_urn, aspect_name, value in cases:
+        await client.upsert_aspect(
+            entity_type=entity_type,
+            entity_urn=entity_urn,
+            aspect_name=aspect_name,
+            value=value,
+        )
+    await client.aclose()
+
+    assert len(captured) == len(cases)
+    for request, (entity_type, entity_urn, aspect_name, value) in zip(
+        captured,
+        cases,
+        strict=True,
+    ):
+        assert request.url == (
+            f"http://datahub.test/openapi/v3/entity/{entity_type}?async=false"
+        )
+        assert json.loads(request.content) == [
+            {
+                "urn": entity_urn,
+                aspect_name: {
+                    "value": value,
+                    "headers": {},
+                },
+            }
+        ]
+        assert "systemMetadata" not in json.loads(request.content)[0][aspect_name]
 
 
 @pytest.mark.asyncio

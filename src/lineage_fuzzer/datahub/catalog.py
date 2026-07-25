@@ -51,7 +51,6 @@ class DataHubCatalogClient:
                 "urn": entity_urn,
                 aspect_name: {
                     "value": value,
-                    "systemMetadata": None,
                     "headers": {},
                 },
             }
