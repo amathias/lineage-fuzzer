@@ -1,0 +1,2 @@
+# Temporary explicit install until the workspace editor can update pyproject.toml.
+duckdb>=1.3,<2

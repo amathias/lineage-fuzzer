@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lineage-fuzzer"
+version = "0.1.0"
+description = "DataHub-powered semantic fault campaigns for data reliability"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Lineage Fuzzer contributors" }]
+dependencies = [
+  "fastapi>=0.116,<1",
+  "httpx>=0.28,<1",
+  "mcp>=1.12,<2",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.1,<2",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+]
+datahub = [
+  "acryl-datahub>=1.1,<2",
+]
+
+[project.scripts]
+lineage-fuzzer = "lineage_fuzzer.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lineage_fuzzer"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+  "integration: requires externally running services",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+

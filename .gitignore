@@ -1,0 +1,20 @@
+﻿.env
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+# Generated campaign state and disposable databases
+.lineage-fuzzer/
+demo/fixtures/lineage-fuzzer/*.duckdb
+demo/fixtures/lineage-fuzzer/*.duckdb.wal
+demo/fixtures/lineage-fuzzer/.snapshots/
+# Python build and test outputs
+.coverage
+*.egg-info/
+build/
+dist/
+
+# Local assistant metadata
+.agents/
