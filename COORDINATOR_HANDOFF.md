@@ -36,9 +36,9 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `Bounded DataHub 1.6 assertion-index polling verified locally; coordinator promotion pending` |
+| Status | `Live DataHub catalog/write/re-read/restore/isolation gate complete` |
 | Milestone | Approved assertion reset/write/re-read/restore receipts against seeded live catalog |
-| Verified commit/artifact | `09e3271ff800e40667b9dd5152b2b771901ba973` |
+| Verified commit/artifact | `3f6adf08065852f4cd779b3565a979077dcab7be` deployed and live-verified |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
@@ -57,10 +57,10 @@ live EC2 host from this project chat.
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | Live catalog seed receipt verified and public readiness 200; exact assertion association/result polling pending promotion |
-| DataHub writeback | Live catalog write verified; two proof attempts wrote only the fixed assertion and both restored it, but no successful four-receipt proof set exists |
-| Blockers | Polling candidate promotion followed by one guarded live proof receipt run |
-| Evidence produced | 64 passing tests; Ruff clean; delayed association/result visibility, strict deadline, fail-closed timeout, and unconditional restore regressions |
+| DataHub read | Public readiness 200 before/after proof; exact fixed assertion association and result re-read verified live |
+| DataHub writeback | Fixed assertion write/result succeeded live; all four proof receipts verified; assertion restored absent |
+| Blockers | None for the live DataHub integration/isolation gate |
+| Evidence produced | 64 passing tests; Ruff clean; five receipt hashes; exact after/restore payloads; byte-identical 253-row foreign baseline |
 
 ## Required environment variables
 
@@ -192,14 +192,41 @@ static token-free error. Restoration remains outside the deadline and executes u
 Delayed fake visibility at both boundaries, overall-deadline cancellation, result-attempt
 exhaustion, sanitized failure receipts, and restoration are covered by the 64-test suite.
 
-Remaining live proof is **blocked, not simulated**:
+Coordinator promotion and live verification of exact candidate
+`3f6adf08065852f4cd779b3565a979077dcab7be` completed the gate:
 
-- The allocated `fuzzer.` catalog entity is seeded, its catalog receipt is verified, and readiness is 200.
-- The fixed proof assertion is currently soft-deleted after two scoped proof restorations.
-- No successful assertion before/write/after/restore receipt set exists yet.
+- Promotion and deterministic local seed succeeded.
+- Public health and readiness were 200 before and after the proof.
+- Both immutable approval digests matched this handoff exactly.
+- The exact proof reset succeeded idempotently.
+- One exact proof command returned `status=proved_and_restored` and all four proof paths.
+- The verified `after` payload contained exactly the fixed assertion URN, dataset URN, custom type,
+  logic, timestamp `1784937600000`, result `SUCCESS`, and the three approved properties.
+- The verified restore payload contained `assertions=[]` and
+  `status=soft_deleted_and_absent_from_dataset`.
+- A fresh foreign-project baseline contained 253 Lifeboat, Forget, License, and Traffic aspect rows
+  with SHA-256
+  `703dbdb1d1df856ba1e5fd7fd3d57f4e939a83847978f9bc8f91d6c16863481f`.
+  The foreign-after snapshot retained 253 rows with the identical hash, and byte-for-byte `cmp`
+  passed.
+- Coordinator evidence is preserved outside Git at
+  `/var/lib/datahub-hackathon/coordinator-evidence/fuzzer-proof-live-002`.
 - The credential remains coordinator-managed; this project chat did not request or access it.
 
-### Guarded coordinator runbook
+Verified receipt SHA-256 values:
+
+| Receipt | SHA-256 |
+|---|---|
+| Catalog | `6d317ce1b95758f2390231434c6c683f0fd2ece45e588955f657f3b03d4bac93` |
+| Before | `76490b831c6dfc2ca605c8d2d680934ece2b313af6999399c889171571ff8aff` |
+| Write | `2a05b4011b53bf0719a3dbd4c2c142316bea409853a5675f96e3d5d2f737b1fa` |
+| After | `37fca6a4a706ade2a9899f6640f8f543dd43e596a526baed2b3b409128e15a88` |
+| Restore | `b27bf7aab97a7dfc2d61dd7d179a2ece326936dfa97350bcba1434a689416ef1` |
+
+The live catalog/assertion write, re-read, restore, readiness, and foreign-isolation gate is
+complete. No further compatibility fix is required for this milestone.
+
+### Verified coordinator runbook
 
 Run these commands from the deployed application container/shell, where the coordinator already
 injects `DATAHUB_TOKEN`, `DATAHUB_GMS_URL`, `DATAHUB_MCP_URL`, `APP_STATE_DIR`, and the frozen
@@ -250,9 +277,11 @@ payload. Expected durable paths are:
 /var/lib/datahub-hackathon/lineage-fuzzer/datahub-receipts/assertion-75a4d4f9bedb54bf/restore.json
 ```
 
-After the catalog seed, verify public `/api/readiness` is 200. A successful proof command must
-return `status=proved_and_restored` and all four paths. Preserve copies as coordinator evidence;
-do not add them to Git.
+The verified live proof returned `status=proved_and_restored` with all four proof paths, and public
+`/api/readiness` remained 200. Evidence copies and isolation snapshots are preserved at
+`/var/lib/datahub-hackathon/coordinator-evidence/fuzzer-proof-live-002`; do not add them to Git.
+Future reruns must satisfy the same exact payload, restoration, readiness, and isolation checks
+before any new success claim.
 
 ## Resource and deployment notes
 
@@ -268,21 +297,17 @@ do not add them to Git.
 - A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
   set and 0.016 CPU seconds; treat this as indicative only and remeasure on the deployment host.
 - The application remains one process on internal port 8104 with a 512 MiB deployment ceiling.
-- Rollback target is the currently deployed seeded/readiness-200 commit
-  `b683e6afc44367e9a88c57ce11d57f486acf3294`.
+- The currently deployed, seeded, readiness-200, live-proof-verified commit is
+  `3f6adf08065852f4cd779b3565a979077dcab7be`.
 
 ## Next project-owned milestone
 
-1. Coordinator promotes the polling candidate without changing the seeded catalog.
-2. Confirm public readiness remains 200 and both approval digests still match this handoff.
-3. Rerun the approved reset against the already-soft-deleted fixed assertion and confirm it remains
-   idempotent.
-4. Run the single approved proof command once; archive `before`, `write`, `after`, and `restore`
-   receipts outside Git.
-5. Confirm the proof assertion remains absent after restoration and report the exact live evidence
-   paths and outcomes back to this project chat.
-6. Only after that live integration gate passes, continue the three semantic fault adapters and
-   campaign execution milestone.
+1. Continue the project-owned three semantic fault adapters and campaign execution milestone.
+2. Use live DataHub lineage and assertion context to produce the deterministic campaign manifest
+   and predicted blast radius.
+3. Preserve the completed live integration receipts and foreign-isolation snapshot as immutable
+   coordinator evidence; do not rerun the proof unless new integration behavior needs verification.
+4. Keep the fixed assertion soft-deleted outside an explicitly approved proof run.
 
 ## Required deployment handoff format
 
