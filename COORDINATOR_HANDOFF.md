@@ -36,12 +36,17 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `deployment compatibility fix verified; coordinator promotion pending` |
-| Milestone | Exact DataHub GraphQL endpoint and native CSV environment parsing |
-| Verified commit/artifact | `08b0ac06a68c836fff781464c645192478cd99a2` |
+| Status | `guarded catalog and live-proof workflow verified locally; coordinator promotion pending` |
+| Milestone | Exact catalog fixture seed plus approved assertion write/re-read/restore receipts |
+| Verified commit/artifact | `c8ca59a9438e703a81b7898b5690539340745731` |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
+| DataHub plan command | `lineage-fuzzer show-datahub-plans` (non-mutating; prints both approval SHA-256 values) |
+| DataHub catalog seed | `lineage-fuzzer seed-datahub-fixture --approval-sha256 540ba6977764a3165af20bd2c2fad5870e8be74546478095086f27a0e778de38` |
+| DataHub catalog reset | `lineage-fuzzer reset-datahub-fixture --approval-sha256 540ba6977764a3165af20bd2c2fad5870e8be74546478095086f27a0e778de38` |
+| DataHub proof run | `lineage-fuzzer run-datahub-proof --approval-sha256 75a4d4f9bedb54bfb847ee1e4ea83b33450c2cf6664cf6fe8c8aa16f7d53094e` |
+| DataHub proof reset | `lineage-fuzzer reset-datahub-proof --approval-sha256 75a4d4f9bedb54bfb847ee1e4ea83b33450c2cf6664cf6fe8c8aa16f7d53094e` |
 | Reset command | `python -m lineage_fuzzer.pipeline_cli seed` (deterministic destructive reset is implemented as a fresh scoped reseed) |
 | Baseline controls | `python -m lineage_fuzzer.pipeline_cli controls` |
 | Snapshot command | `python -m lineage_fuzzer.pipeline_cli snapshot` |
@@ -52,10 +57,10 @@ live EC2 host from this project chat.
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | Exact GMS endpoint fix verified locally; authenticated live recheck and catalog receipt pending coordinator run |
-| DataHub writeback | GraphQL client implemented; no live write/re-read/restore receipt claimed |
-| Blockers | Coordinator promotion, absent catalog allocation, and guarded shared-host read/write/re-read/restore receipt run |
-| Evidence produced | 45 passing tests; Ruff clean; exact URL and real CSV environment regressions; prior live health 200/readiness 503 finding |
+| DataHub read | Guarded OpenAPI catalog verification plus existing GraphQL/MCP reads implemented; live receipts pending coordinator run |
+| DataHub writeback | Fixed OpenAPI aspect seed/reset and fixed custom-assertion write/result/re-read/soft-delete restore implemented; no live receipt claimed |
+| Blockers | Coordinator promotion, catalog seed on the shared host, readiness 200 confirmation, and guarded live proof receipt run |
+| Evidence produced | 58 passing tests; Ruff clean; approval, foreign-namespace, missing-marker, sanitized-receipt, re-read, and restoration regressions |
 
 ## Required environment variables
 
@@ -129,11 +134,61 @@ Remaining live proof is **blocked, not simulated**:
 - No live mutation, write, re-read, or restore receipt has been attempted.
 - The credential remains coordinator-managed; this project chat did not request or access it.
 
+### Guarded coordinator runbook
+
+Run these commands from the deployed application container/shell, where the coordinator already
+injects `DATAHUB_TOKEN`, `DATAHUB_GMS_URL`, `DATAHUB_MCP_URL`, `APP_STATE_DIR`, and the frozen
+allocation variables. Do not echo or pass the token on the command line.
+
+```powershell
+lineage-fuzzer show-datahub-plans
+lineage-fuzzer seed-datahub-fixture --approval-sha256 540ba6977764a3165af20bd2c2fad5870e8be74546478095086f27a0e778de38
+lineage-fuzzer reset-datahub-fixture --approval-sha256 540ba6977764a3165af20bd2c2fad5870e8be74546478095086f27a0e778de38
+lineage-fuzzer reset-datahub-proof --approval-sha256 75a4d4f9bedb54bfb847ee1e4ea83b33450c2cf6664cf6fe8c8aa16f7d53094e
+lineage-fuzzer run-datahub-proof --approval-sha256 75a4d4f9bedb54bfb847ee1e4ea83b33450c2cf6664cf6fe8c8aa16f7d53094e
+```
+
+The catalog seed and reset are identical deterministic replays. They are restricted to:
+
+- `urn:li:domain:lineage-fuzzer`
+- `urn:li:tag:project-lineage-fuzzer`
+- `urn:li:tag:lineage-fuzzer-sandbox`
+- `urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)`
+
+The assertion command is restricted to
+`urn:li:assertion:fuzzer.catalog-proof.orders-nonempty`. Before any assertion mutation it re-reads
+the allocated dataset over OpenAPI and requires the exact `duckdb` platform, `DEV` environment,
+`fuzzer.` name, domain URN, both tag URNs, active status, and `sandbox=true`. It then:
+
+1. Captures the dataset's attached assertions (`before.json`).
+2. Upserts the fixed custom assertion, activates it, and reports the fixed successful result
+   (`write.json`).
+3. Re-reads and verifies the assertion, entity, result, properties, and timestamp (`after.json`).
+4. Soft-deletes only the fixed assertion in `finally`, re-reads its absence, and records
+   `restore.json`.
+
+Receipts are atomic, whitelisted, and contain no request headers, raw token, or unbounded server
+payload. Expected durable paths are:
+
+```text
+/var/lib/datahub-hackathon/lineage-fuzzer/datahub-receipts/catalog-540ba6977764a316/catalog.json
+/var/lib/datahub-hackathon/lineage-fuzzer/datahub-receipts/assertion-75a4d4f9bedb54bf/before.json
+/var/lib/datahub-hackathon/lineage-fuzzer/datahub-receipts/assertion-75a4d4f9bedb54bf/write.json
+/var/lib/datahub-hackathon/lineage-fuzzer/datahub-receipts/assertion-75a4d4f9bedb54bf/after.json
+/var/lib/datahub-hackathon/lineage-fuzzer/datahub-receipts/assertion-75a4d4f9bedb54bf/restore.json
+```
+
+After the catalog seed, verify public `/api/readiness` is 200. A successful proof command must
+return `status=proved_and_restored` and all four paths. Preserve copies as coordinator evidence;
+do not add them to Git.
+
 ## Resource and deployment notes
 
 - DuckDB and snapshots are disposable and ignored by source control.
 - DuckDB is now declared directly in `pyproject.toml`; `requirements-fixture.txt` remains only as
   a backward-compatible setup aid.
+- DataHub receipts add five small JSON files beneath the existing persistent state allocation.
+- Catalog/proof commands are bounded foreground jobs; they add no workers or recurring load.
 - There are no workers, migrations, new ports, public services, or infrastructure changes.
 - Readiness performs bounded read-only DuckDB, GraphQL, and MCP queries per request.
 - A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
@@ -144,13 +199,15 @@ Remaining live proof is **blocked, not simulated**:
 
 ## Next project-owned milestone
 
-1. Coordinator promotes the new clean candidate without the JSON-list workaround.
-2. Coordinator verifies authenticated GMS and MCP readiness on the shared host.
-3. Seed the missing namespaced catalog entity with domain, project tag, sandbox tag, and marker.
-4. Preserve the sanitized read receipt, then perform the specifically approved sandbox-only
-   write/re-read/restore sequence and preserve all four receipts.
-5. Implement the three seeded semantic fault adapters and campaign execution after the live
-   integration gate is verified.
+1. Coordinator promotes the clean handoff candidate without changing the frozen allocation.
+2. Run `show-datahub-plans` and confirm both printed digests match this handoff.
+3. Run the approved catalog seed and confirm public `/api/readiness` changes from 503 to 200.
+4. Run the approved proof reset, then the single proof command; archive `before`, `write`, `after`,
+   and `restore` receipts outside Git.
+5. Confirm the proof assertion is absent after restoration and report the exact live evidence
+   paths and outcomes back to this project chat.
+6. Only after that live integration gate passes, continue the three semantic fault adapters and
+   campaign execution milestone.
 
 ## Required deployment handoff format
 
