@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "Lineage Fuzzer contributors" }]
 dependencies = [
+  "duckdb>=1.3,<2",
   "fastapi>=0.116,<1",
   "httpx>=0.28,<1",
   "mcp>=1.12,<2",

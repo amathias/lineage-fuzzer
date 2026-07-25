@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from lineage_fuzzer.allocation import AllocationViolation, validate_dataset_urn
 from lineage_fuzzer.config import Settings
 from lineage_fuzzer.domain.models import ApprovalReceipt, CampaignManifest, TargetDescriptor
 
@@ -45,6 +46,17 @@ class SafetyGate:
         if target not in manifest.targets:
             raise SafetyViolation("target is not present in the approved campaign manifest")
 
+        try:
+            identity = validate_dataset_urn(target.urn, self._settings)
+        except AllocationViolation as error:
+            raise SafetyViolation(str(error)) from error
+        expected_name = (
+            f"{self._settings.datahub_urn_prefix}"
+            f"{target.schema_name}.{target.table_name}"
+        )
+        if identity.name != expected_name:
+            raise SafetyViolation("target URN identity does not match target descriptor")
+
         if target.platform.casefold() not in {
             platform.casefold() for platform in self._settings.allowed_platforms
         }:
@@ -63,6 +75,9 @@ class SafetyGate:
         if marker is None or marker.casefold() != self._settings.required_marker_value.casefold():
             raise SafetyViolation("required DataHub sandbox marker is missing or invalid")
 
+        if self._settings.datahub_project_tag not in target.tags:
+            raise SafetyViolation("required DataHub project tag is missing")
+
         if self._settings.required_sandbox_tag not in target.tags:
             raise SafetyViolation("required DataHub sandbox tag is missing")
 
@@ -74,10 +89,12 @@ class SafetyGate:
                 "injection-explicitly-enabled",
                 "approval-bound-to-manifest",
                 "target-in-manifest",
+                "urn-prefix-and-identity-allocated",
                 "platform-allowlisted",
                 "environment-allowlisted",
                 "database-path-exactly-allowlisted",
                 "datahub-sandbox-marker-present",
+                "datahub-project-tag-present",
                 "datahub-sandbox-tag-present",
             ),
         )

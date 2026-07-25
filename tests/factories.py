@@ -10,10 +10,12 @@ from lineage_fuzzer.domain.models import (
     TargetDescriptor,
 )
 
-DATASET_URN = "urn:li:dataset:(urn:li:dataPlatform:duckdb,commerce.raw.orders,DEV)"
+DATASET_URN = "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
 
 
-def make_target(database_path: Path | str = "demo/data/lineage_fuzzer.duckdb") -> TargetDescriptor:
+def make_target(
+    database_path: Path | str = "demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb",
+) -> TargetDescriptor:
     return TargetDescriptor(
         urn=DATASET_URN,
         platform="duckdb",
@@ -21,7 +23,7 @@ def make_target(database_path: Path | str = "demo/data/lineage_fuzzer.duckdb") -
         database_path=database_path,
         schema_name="raw",
         table_name="orders",
-        tags=frozenset({"lineage-fuzzer-sandbox"}),
+        tags=frozenset({"project-lineage-fuzzer", "lineage-fuzzer-sandbox"}),
         custom_properties={"sandbox": "true"},
     )
 

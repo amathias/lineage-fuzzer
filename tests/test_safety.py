@@ -13,7 +13,9 @@ from tests.factories import make_approval, make_manifest, make_target
 def enabled_settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "LINEAGE_FUZZER_INJECTION_ENABLED": True,
-        "LINEAGE_FUZZER_ALLOWED_DATABASE_PATHS": ["demo/data/lineage_fuzzer.duckdb"],
+        "LINEAGE_FUZZER_ALLOWED_DATABASE_PATHS": [
+            "demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb"
+        ],
         "LINEAGE_FUZZER_ALLOWED_ENVIRONMENTS": ["DEV"],
         "LINEAGE_FUZZER_ALLOWED_PLATFORMS": ["duckdb"],
     }
@@ -34,7 +36,10 @@ def test_allows_only_fully_marked_approved_fixture(tmp_path: Path) -> None:
 
     assert evidence.target_urn == target.urn
     assert (
-        evidence.resolved_database_path == (tmp_path / "demo/data/lineage_fuzzer.duckdb").resolve()
+        evidence.resolved_database_path
+        == (
+            tmp_path / "demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb"
+        ).resolve()
     )
     assert "datahub-sandbox-marker-present" in evidence.checks
 
@@ -71,8 +76,24 @@ def test_denies_when_injection_is_not_explicitly_enabled(tmp_path: Path) -> None
             "platform is not allowlisted",
         ),
         (
-            make_target().model_copy(update={"tags": frozenset()}),
+            make_target().model_copy(
+                update={"tags": frozenset({"project-lineage-fuzzer"})}
+            ),
             "sandbox tag is missing",
+        ),
+        (
+            make_target().model_copy(
+                update={"tags": frozenset({"lineage-fuzzer-sandbox"})}
+            ),
+            "project tag is missing",
+        ),
+        (
+            make_target().model_copy(
+                update={
+                    "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,other.raw.orders,DEV)"
+                }
+            ),
+            "outside the allocated URN prefix",
         ),
         (
             make_target().model_copy(update={"custom_properties": {}}),
