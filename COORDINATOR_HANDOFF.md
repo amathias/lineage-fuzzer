@@ -36,9 +36,9 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `DataHub 1.6 assertion reread schema fix verified; coordinator promotion pending` |
+| Status | `Bounded DataHub 1.6 assertion-index polling verified locally; coordinator promotion pending` |
 | Milestone | Approved assertion reset/write/re-read/restore receipts against seeded live catalog |
-| Verified commit/artifact | `6df411dd542a846431a1aaa0d5c4a9f0f32ea5f1` |
+| Verified commit/artifact | `09e3271ff800e40667b9dd5152b2b771901ba973` |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
@@ -57,10 +57,10 @@ live EC2 host from this project chat.
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | Live catalog seed receipt verified and public readiness 200; corrected assertion reread pending promotion |
-| DataHub writeback | Live catalog write verified; fixed proof assertion soft-delete executed, but successful proof receipts remain pending |
-| Blockers | Assertion-schema candidate promotion, idempotent reset reread, then guarded live proof receipt run |
-| Evidence produced | 61 passing tests; Ruff clean; exact DataHub 1.6 assertion query and already-soft-deleted reset idempotency regressions |
+| DataHub read | Live catalog seed receipt verified and public readiness 200; exact assertion association/result polling pending promotion |
+| DataHub writeback | Live catalog write verified; two proof attempts wrote only the fixed assertion and both restored it, but no successful four-receipt proof set exists |
+| Blockers | Polling candidate promotion followed by one guarded live proof receipt run |
+| Evidence produced | 64 passing tests; Ruff clean; delayed association/result visibility, strict deadline, fail-closed timeout, and unconditional restore regressions |
 
 ## Required environment variables
 
@@ -168,10 +168,34 @@ fields: `AssertionInfo.type`, `description`, and `customAssertion`, with
 from `customAssertion`. An exact query regression locks this selection, and reset tests prove two
 consecutive calls succeed when the fixed assertion is already soft-deleted.
 
+Coordinator promotion of exact candidate `b683e6afc44367e9a88c57ce11d57f486acf3294`
+established:
+
+- The exact approved proof reset succeeds idempotently; the fixed assertion is soft-deleted.
+- The seeded catalog allocation and public readiness remain 200.
+- The first exact proof attempt upserted and activated only the fixed assertion, but DataHub
+  rejected `reportAssertionResult` because its index did not yet expose the new assertion/entity
+  association. The unconditional `finally` restore succeeded.
+- A strict retry after indexing reported the fixed result, but the immediate assertion reread did
+  not yet expose that result. It failed closed with `ProofVerificationError`, and the unconditional
+  restore succeeded again.
+- No successful four-receipt proof set was claimed. The fixed assertion remains soft-deleted and
+  the foreign-project baseline remains preserved.
+
+Commit `09e3271ff800e40667b9dd5152b2b771901ba973` adds two exact visibility
+gates using the immutable retry schedule `0, 0.25, 0.5, 1, 2, 3` seconds and one strict 15-second
+overall deadline around association polling, result reporting, and result polling. The first gate
+requires the exact assertion URN, dataset URN, custom type, and logic before result reporting. The
+second requires the exact fixed timestamp, result type, and properties before `after.json` can be
+written. Absent or older indexed state retries; contradictory state fails immediately with a
+static token-free error. Restoration remains outside the deadline and executes unconditionally.
+Delayed fake visibility at both boundaries, overall-deadline cancellation, result-attempt
+exhaustion, sanitized failure receipts, and restoration are covered by the 64-test suite.
+
 Remaining live proof is **blocked, not simulated**:
 
 - The allocated `fuzzer.` catalog entity is seeded, its catalog receipt is verified, and readiness is 200.
-- The fixed proof assertion is currently soft-deleted after the scoped partial reset.
+- The fixed proof assertion is currently soft-deleted after two scoped proof restorations.
 - No successful assertion before/write/after/restore receipt set exists yet.
 - The credential remains coordinator-managed; this project chat did not request or access it.
 
@@ -202,11 +226,18 @@ the allocated dataset over OpenAPI and requires the exact `duckdb` platform, `DE
 `fuzzer.` name, domain URN, both tag URNs, active status, and `sandbox=true`. It then:
 
 1. Captures the dataset's attached assertions (`before.json`).
-2. Upserts the fixed custom assertion, activates it, and reports the fixed successful result
-   (`write.json`).
-3. Re-reads and verifies the assertion, entity, result, properties, and timestamp (`after.json`).
-4. Soft-deletes only the fixed assertion in `finally`, re-reads its absence, and records
-   `restore.json`.
+2. Upserts and activates the fixed custom assertion.
+3. Polls the dataset assertion index on the fixed schedule until the exact approved association,
+   type, and logic are visible; only then reports the fixed successful result (`write.json`).
+4. Polls again until the exact approved timestamp, result type, and properties are visible; only
+   then records `after.json`.
+5. Soft-deletes only the fixed assertion in `finally`, outside the polling deadline, re-reads its
+   absence, and records `restore.json`.
+
+Both polls share one 15-second overall deadline. Exhausting an attempt schedule or the deadline
+fails closed with a static token-free error. If association visibility fails, result reporting is
+never attempted. If result visibility fails after reporting, `after.json` is not written. The
+restore path runs in both cases.
 
 Receipts are atomic, whitelisted, and contain no request headers, raw token, or unbounded server
 payload. Expected durable paths are:
@@ -230,21 +261,23 @@ do not add them to Git.
   a backward-compatible setup aid.
 - DataHub receipts add five small JSON files beneath the existing persistent state allocation.
 - Catalog/proof commands are bounded foreground jobs; they add no workers or recurring load.
+- Assertion visibility polling uses at most six reads per boundary and one strict 15-second
+  deadline for both boundaries plus result reporting.
 - There are no workers, migrations, new ports, public services, or infrastructure changes.
 - Readiness performs bounded read-only DuckDB, GraphQL, and MCP queries per request.
 - A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
   set and 0.016 CPU seconds; treat this as indicative only and remeasure on the deployment host.
 - The application remains one process on internal port 8104 with a 512 MiB deployment ceiling.
 - Rollback target is the currently deployed seeded/readiness-200 commit
-  `52047ce3bf1ead25097632803088b75660414c78`.
+  `b683e6afc44367e9a88c57ce11d57f486acf3294`.
 
 ## Next project-owned milestone
 
-1. Coordinator promotes the assertion-schema candidate without changing the seeded catalog.
+1. Coordinator promotes the polling candidate without changing the seeded catalog.
 2. Confirm public readiness remains 200 and both approval digests still match this handoff.
-3. Rerun the approved reset against the already-soft-deleted fixed assertion and verify its
-   restore receipt.
-4. Run the single approved proof command; archive `before`, `write`, `after`, and `restore`
+3. Rerun the approved reset against the already-soft-deleted fixed assertion and confirm it remains
+   idempotent.
+4. Run the single approved proof command once; archive `before`, `write`, `after`, and `restore`
    receipts outside Git.
 5. Confirm the proof assertion remains absent after restoration and report the exact live evidence
    paths and outcomes back to this project chat.
