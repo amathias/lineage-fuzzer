@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -101,6 +104,25 @@ class DataHubProofPlan(BaseModel):
 DEFAULT_PROOF_PLAN = DataHubProofPlan()
 
 
+@dataclass(frozen=True)
+class ProofPollingPolicy:
+    """Deterministic bounded waits for DataHub's eventually consistent indexes."""
+
+    attempt_delays_seconds: tuple[float, ...] = (0.0, 0.25, 0.5, 1.0, 2.0, 3.0)
+    overall_timeout_seconds: float = 15.0
+
+    def __post_init__(self) -> None:
+        if not self.attempt_delays_seconds:
+            raise ValueError("proof polling requires at least one attempt")
+        if any(delay < 0 for delay in self.attempt_delays_seconds):
+            raise ValueError("proof polling delays cannot be negative")
+        if self.overall_timeout_seconds <= 0:
+            raise ValueError("proof polling timeout must be positive")
+
+
+DEFAULT_POLLING_POLICY = ProofPollingPolicy()
+
+
 class DataHubAssertionProofService:
     """Executes one manifest-approved assertion proof and always restores it."""
 
@@ -112,12 +134,16 @@ class DataHubAssertionProofService:
         *,
         workspace_root: Path,
         plan: DataHubProofPlan = DEFAULT_PROOF_PLAN,
+        polling_policy: ProofPollingPolicy = DEFAULT_POLLING_POLICY,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     ) -> None:
         self.settings = settings
         self.graphql = graphql
         self.catalog = catalog
         self.workspace_root = workspace_root.resolve()
         self.plan = plan
+        self.polling_policy = polling_policy
+        self.sleep = sleep
 
     async def run(self, *, approval_sha256: str) -> dict[str, Any]:
         self._guard(approval_sha256)
@@ -158,31 +184,41 @@ class DataHubAssertionProofService:
                 entity_urn=self.plan.assertion_urn,
                 removed=False,
             )
-            result = await self.graphql.report_assertion_result(
-                assertion_urn=self.plan.assertion_urn,
-                result_type=self.plan.result_type,
-                properties=dict(self.plan.properties),
-                timestamp_millis=self.plan.timestamp_millis,
-            )
-            paths["write"] = str(
-                store.write(
-                    "write",
-                    plan_sha256=self.plan.sha256,
-                    payload={
-                        "dataset_urn": self.plan.dataset_urn,
-                        "assertion_urn": self.plan.assertion_urn,
-                        "operations": [upsert.operation, "set_status_active", result.operation],
-                        "result_type": self.plan.result_type,
-                        "timestamp_millis": self.plan.timestamp_millis,
-                    },
-                )
-            )
-            write_recorded = True
+            try:
+                async with asyncio.timeout(
+                    self.polling_policy.overall_timeout_seconds
+                ):
+                    await self._wait_for_association()
+                    result = await self.graphql.report_assertion_result(
+                        assertion_urn=self.plan.assertion_urn,
+                        result_type=self.plan.result_type,
+                        properties=dict(self.plan.properties),
+                        timestamp_millis=self.plan.timestamp_millis,
+                    )
+                    paths["write"] = str(
+                        store.write(
+                            "write",
+                            plan_sha256=self.plan.sha256,
+                            payload={
+                                "dataset_urn": self.plan.dataset_urn,
+                                "assertion_urn": self.plan.assertion_urn,
+                                "operations": [
+                                    upsert.operation,
+                                    "set_status_active",
+                                    result.operation,
+                                ],
+                                "result_type": self.plan.result_type,
+                                "timestamp_millis": self.plan.timestamp_millis,
+                            },
+                        )
+                    )
+                    write_recorded = True
+                    after = await self._wait_for_result()
+            except TimeoutError:
+                raise ProofVerificationError(
+                    "proof visibility deadline exceeded"
+                ) from None
 
-            after = _normalize_assertions(
-                await self.graphql.assertions_for_dataset(self.plan.dataset_urn)
-            )
-            _validate_after(after, self.plan)
             paths["after"] = str(
                 store.write(
                     "after",
@@ -291,6 +327,35 @@ class DataHubAssertionProofService:
         )
         validate_observed_dataset(observed, self.settings, self.plan.dataset_urn)
 
+    async def _wait_for_association(self) -> list[dict[str, Any]]:
+        for delay in self.polling_policy.attempt_delays_seconds:
+            await self.sleep(delay)
+            assertions = _normalize_assertions(
+                await self.graphql.assertions_for_dataset(self.plan.dataset_urn)
+            )
+            match = _find_assertion(assertions, self.plan.assertion_urn)
+            if match is None:
+                continue
+            _validate_association(match, self.plan)
+            return assertions
+        raise ProofVerificationError("proof assertion association visibility timed out")
+
+    async def _wait_for_result(self) -> list[dict[str, Any]]:
+        for delay in self.polling_policy.attempt_delays_seconds:
+            await self.sleep(delay)
+            assertions = _normalize_assertions(
+                await self.graphql.assertions_for_dataset(self.plan.dataset_urn)
+            )
+            match = _find_assertion(assertions, self.plan.assertion_urn)
+            if match is None:
+                continue
+            _validate_association(match, self.plan)
+            if match.get("timestamp_millis") != self.plan.timestamp_millis:
+                continue
+            _validate_after(assertions, self.plan)
+            return assertions
+        raise ProofVerificationError("proof assertion result visibility timed out")
+
     def _store(self) -> ReceiptStore:
         return ReceiptStore(
             self.settings.state_dir,
@@ -356,15 +421,31 @@ def _contains_assertion(assertions: list[dict[str, Any]], assertion_urn: str) ->
     return any(assertion.get("urn") == assertion_urn for assertion in assertions)
 
 
-def _validate_after(assertions: list[dict[str, Any]], plan: DataHubProofPlan) -> None:
-    match = next(
-        (assertion for assertion in assertions if assertion.get("urn") == plan.assertion_urn),
+def _find_assertion(
+    assertions: list[dict[str, Any]], assertion_urn: str
+) -> dict[str, Any] | None:
+    return next(
+        (assertion for assertion in assertions if assertion.get("urn") == assertion_urn),
         None,
     )
+
+
+def _validate_association(
+    assertion: dict[str, Any], plan: DataHubProofPlan
+) -> None:
+    if assertion.get("entity_urn") != plan.dataset_urn:
+        raise ProofVerificationError("proof assertion re-read returned a foreign entity")
+    if assertion.get("custom_type") != plan.assertion_type:
+        raise ProofVerificationError("proof assertion type differed from the approved plan")
+    if assertion.get("logic") != plan.logic:
+        raise ProofVerificationError("proof assertion logic differed from the approved plan")
+
+
+def _validate_after(assertions: list[dict[str, Any]], plan: DataHubProofPlan) -> None:
+    match = _find_assertion(assertions, plan.assertion_urn)
     if match is None:
         raise ProofVerificationError("proof assertion was absent from the DataHub re-read")
-    if match.get("entity_urn") != plan.dataset_urn:
-        raise ProofVerificationError("proof assertion re-read returned a foreign entity")
+    _validate_association(match, plan)
     if match.get("result_type") != plan.result_type:
         raise ProofVerificationError("proof assertion result was not visible on re-read")
     if match.get("timestamp_millis") != plan.timestamp_millis:

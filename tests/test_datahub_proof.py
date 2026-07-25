@@ -19,6 +19,7 @@ from lineage_fuzzer.datahub.proof import (
     DEFAULT_PROOF_PLAN,
     DataHubAssertionProofService,
     ProofApprovalViolation,
+    ProofPollingPolicy,
     ProofVerificationError,
 )
 from lineage_fuzzer.datahub.protocols import WritebackReceipt
@@ -47,6 +48,8 @@ class FakeProofClients:
         *,
         wrong_result: bool = False,
         missing_marker: bool = False,
+        association_delay_reads: int = 0,
+        result_delay_reads: int = 0,
     ) -> None:
         self.active = False
         self.created = False
@@ -54,6 +57,8 @@ class FakeProofClients:
         self.calls: list[tuple[str, Any]] = []
         self.wrong_result = wrong_result
         self.missing_marker = missing_marker
+        self.association_delay_reads = association_delay_reads
+        self.result_delay_reads = result_delay_reads
 
     async def get_entity(self, **request: Any) -> Any:
         self.calls.append(("catalog_read", request))
@@ -83,8 +88,27 @@ class FakeProofClients:
         self.calls.append(("read", dataset_urn))
         assertions: list[dict[str, Any]] = []
         if self.active:
+            if self.association_delay_reads > 0:
+                self.association_delay_reads -= 1
+                return {"dataset": {"assertions": {"assertions": []}}}
             plan = DEFAULT_PROOF_PLAN
             result_type = "FAILURE" if self.wrong_result else plan.result_type
+            run_events: list[dict[str, Any]] = []
+            if self.result is not None and self.result_delay_reads > 0:
+                self.result_delay_reads -= 1
+            elif self.result is not None:
+                run_events = [
+                    {
+                        "timestampMillis": plan.timestamp_millis,
+                        "result": {
+                            "type": result_type,
+                            "nativeResults": [
+                                {"key": key, "value": value}
+                                for key, value in plan.properties
+                            ],
+                        },
+                    }
+                ]
             assertions.append(
                 {
                     "urn": plan.assertion_urn,
@@ -96,18 +120,7 @@ class FakeProofClients:
                         },
                     },
                     "runEvents": {
-                        "runEvents": [
-                            {
-                                "timestampMillis": plan.timestamp_millis,
-                                "result": {
-                                    "type": result_type,
-                                    "nativeResults": [
-                                        {"key": key, "value": value}
-                                        for key, value in plan.properties
-                                    ],
-                                },
-                            }
-                        ]
+                        "runEvents": run_events
                     },
                 }
             )
@@ -137,6 +150,10 @@ class FakeProofClients:
         assert values["entity_urn"] == ASSERTION_URN
         self.active = not values["removed"]
         return {"ok": True}
+
+
+async def _no_sleep(_: float) -> None:
+    return None
 
 
 @pytest.mark.asyncio
@@ -174,6 +191,109 @@ async def test_proof_writes_rereads_restores_and_persists_four_receipts(
     observed = after_receipt["payload"]["assertions"][0]
     assert observed["custom_type"] == DEFAULT_PROOF_PLAN.assertion_type
     assert observed["logic"] == DEFAULT_PROOF_PLAN.logic
+
+
+@pytest.mark.asyncio
+async def test_proof_polls_delayed_association_and_result_visibility(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    clients = FakeProofClients(
+        association_delay_reads=2,
+        result_delay_reads=2,
+    )
+    service = DataHubAssertionProofService(
+        settings,
+        clients,
+        clients,
+        workspace_root=tmp_path,
+        polling_policy=ProofPollingPolicy(
+            attempt_delays_seconds=(0.0, 0.0, 0.0),
+            overall_timeout_seconds=1.0,
+        ),
+        sleep=_no_sleep,
+    )
+
+    result = await service.run(approval_sha256=DEFAULT_PROOF_PLAN.sha256)
+
+    assert result["status"] == "proved_and_restored"
+    assert clients.active is False
+    call_names = [call[0] for call in clients.calls]
+    result_index = call_names.index("result")
+    assert call_names[:result_index].count("read") == 4
+    assert call_names[result_index + 1 :].count("read") == 4
+
+
+@pytest.mark.asyncio
+async def test_proof_overall_visibility_timeout_fails_closed_and_restores(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    clients = FakeProofClients(association_delay_reads=99)
+    service = DataHubAssertionProofService(
+        settings,
+        clients,
+        clients,
+        workspace_root=tmp_path,
+        polling_policy=ProofPollingPolicy(
+            attempt_delays_seconds=(0.0, 1.0),
+            overall_timeout_seconds=0.01,
+        ),
+    )
+
+    with pytest.raises(
+        ProofVerificationError,
+        match="^proof visibility deadline exceeded$",
+    ):
+        await service.run(approval_sha256=DEFAULT_PROOF_PLAN.sha256)
+
+    assert clients.active is False
+    assert not any(call[0] == "result" for call in clients.calls)
+    receipt_root = (
+        settings.state_dir
+        / "datahub-receipts"
+        / f"assertion-{DEFAULT_PROOF_PLAN.sha256[:16]}"
+    )
+    assert (receipt_root / "restore.json").is_file()
+    write_content = (receipt_root / "write.json").read_text(encoding="utf-8")
+    assert "failed_closed" in write_content
+    assert "authorization" not in write_content.casefold()
+    assert "bearer" not in write_content.casefold()
+
+
+@pytest.mark.asyncio
+async def test_proof_result_visibility_attempt_timeout_fails_closed_and_restores(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    clients = FakeProofClients(result_delay_reads=99)
+    service = DataHubAssertionProofService(
+        settings,
+        clients,
+        clients,
+        workspace_root=tmp_path,
+        polling_policy=ProofPollingPolicy(
+            attempt_delays_seconds=(0.0, 0.0),
+            overall_timeout_seconds=1.0,
+        ),
+        sleep=_no_sleep,
+    )
+
+    with pytest.raises(
+        ProofVerificationError,
+        match="^proof assertion result visibility timed out$",
+    ):
+        await service.run(approval_sha256=DEFAULT_PROOF_PLAN.sha256)
+
+    assert clients.result is not None
+    assert clients.active is False
+    receipt_root = (
+        settings.state_dir
+        / "datahub-receipts"
+        / f"assertion-{DEFAULT_PROOF_PLAN.sha256[:16]}"
+    )
+    assert (receipt_root / "restore.json").is_file()
+    assert not (receipt_root / "after.json").exists()
 
 
 @pytest.mark.asyncio
