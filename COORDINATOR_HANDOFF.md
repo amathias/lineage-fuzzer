@@ -36,9 +36,9 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `code verified; live DataHub proof pending coordinator run` |
-| Milestone | Truthful readiness and fail-closed allocation enforcement |
-| Verified commit/artifact | `d4dd9f2084a4c9a773c1ec35e36565ce881ea5a0` |
+| Status | `deployment compatibility fix verified; coordinator promotion pending` |
+| Milestone | Exact DataHub GraphQL endpoint and native CSV environment parsing |
+| Verified commit/artifact | `08b0ac06a68c836fff781464c645192478cd99a2` |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
@@ -52,16 +52,18 @@ live EC2 host from this project chat.
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | MCP client and checks implemented; live receipt pending coordinator promotion and guarded shared-host run |
+| DataHub read | Exact GMS endpoint fix verified locally; authenticated live recheck and catalog receipt pending coordinator run |
 | DataHub writeback | GraphQL client implemented; no live write/re-read/restore receipt claimed |
-| Blockers | Coordinator promotion and guarded shared-host read/write/re-read/restore receipt run |
-| Evidence produced | 42 passing tests; Ruff clean; local readiness 503 proves missing state/token honestly; fixture checksum and exception-safe restoration evidence |
+| Blockers | Coordinator promotion, absent catalog allocation, and guarded shared-host read/write/re-read/restore receipt run |
+| Evidence produced | 45 passing tests; Ruff clean; exact URL and real CSV environment regressions; prior live health 200/readiness 503 finding |
 
 ## Required environment variables
 
 The application consumes `APP_ENV` and `APP_STATE_DIR` directly and retains the original
 `LINEAGE_FUZZER_ENVIRONMENT` and `LINEAGE_FUZZER_STATE_DIR` names as compatibility aliases.
 Secret values are injected only at runtime and must never be written to repository files.
+The three `LINEAGE_FUZZER_ALLOWED_*` variables accept ordinary comma-separated values; JSON-array
+serialization is neither required nor preferred.
 
 ```text
 PROJECT_SLUG=lineage-fuzzer
@@ -107,24 +109,25 @@ DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 6. The configured readiness entity's `fuzzer.` URN, domain, project tag, sandbox tag, and
    `sandbox=true` custom property.
 
-Local verification without runtime state or a service credential returns HTTP 503. It reports the
-successful allocation and fixture checks while identifying state, GMS, MCP, and catalog checks as
-not ready. Allocation failure short-circuits all network access.
+Coordinator promotion of candidate `2166ef2d464caf41708d33672ec3273ad5f4e02f` established:
 
-The live DataHub proof is **blocked, not simulated**:
+- The image built and deterministic seed succeeded.
+- `/api/health` returned 200 and `/api/readiness` truthfully returned 503.
+- Deployment temporarily JSON-serialized the three allowed-list variables.
+- GMS failed because `post("")` appended `/` to `/api/graphql`; DataHub Core 1.6.0 returned 404.
+- The same authenticated endpoint without the trailing slash returned 200.
 
-- `DATAHUB_TOKEN` was absent during this milestone. Its presence was checked without requesting,
-  printing, persisting, or logging a value.
-- No mock result is presented as live evidence.
-- No before/write/after/restore receipts exist yet.
-- The public deployment is still commit `a7d2d51e1f9cd3213d5f822e08c22d3d9c477e33`;
-  `/api/readiness` remains 404 there until the coordinator promotes the verified artifact.
-- The coordinator owns promotion and guarded shared-host verification. This project chat did not
-  open tunnels, access EC2, or deploy.
+Commit `08b0ac06a68c836fff781464c645192478cd99a2` addresses both deployment findings:
 
-After this local milestone, the coordinator confirmed that a dedicated service credential is
-stored in AWS and loaded into the live services. This project chat did not request, receive, print,
-or access that credential. Live receipts remain pending the coordinator-owned guarded host run.
+- GraphQL requests post to the normalized exact absolute endpoint.
+- CSV list fields use pydantic-settings `NoDecode` before the existing splitter.
+- URL and real environment-source regressions pass within the 45-test suite.
+
+Remaining live proof is **blocked, not simulated**:
+
+- The allocated `fuzzer.` catalog entity and its required metadata are still absent.
+- No live mutation, write, re-read, or restore receipt has been attempted.
+- The credential remains coordinator-managed; this project chat did not request or access it.
 
 ## Resource and deployment notes
 
@@ -137,16 +140,16 @@ or access that credential. Live receipts remain pending the coordinator-owned gu
   set and 0.016 CPU seconds; treat this as indicative only and remeasure on the deployment host.
 - The application remains one process on internal port 8104 with a 512 MiB deployment ceiling.
 - Rollback target is the previously deployed commit
-  `a7d2d51e1f9cd3213d5f822e08c22d3d9c477e33`.
+  `2166ef2d464caf41708d33672ec3273ad5f4e02f`.
 
 ## Next project-owned milestone
 
-1. After the coordinator's credential follow-up, open separate local tunnels with
-   `..\infra\scripts\open_tunnel.ps1 -Service gms` and `-Service mcp`.
-2. Run authenticated readiness and preserve the sanitized read receipt.
-3. Perform the specifically approved sandbox-only write/re-read/restore sequence and preserve all
-   four sanitized receipts.
-4. Implement the three seeded semantic fault adapters and campaign execution after the live
+1. Coordinator promotes the new clean candidate without the JSON-list workaround.
+2. Coordinator verifies authenticated GMS and MCP readiness on the shared host.
+3. Seed the missing namespaced catalog entity with domain, project tag, sandbox tag, and marker.
+4. Preserve the sanitized read receipt, then perform the specifically approved sandbox-only
+   write/re-read/restore sequence and preserve all four receipts.
+5. Implement the three seeded semantic fault adapters and campaign execution after the live
    integration gate is verified.
 
 ## Required deployment handoff format
