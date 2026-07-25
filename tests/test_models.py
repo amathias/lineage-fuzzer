@@ -14,6 +14,26 @@ def test_manifest_digest_is_reproducible_across_creation_timestamps() -> None:
     assert first.sha256 == second.sha256
 
 
+def test_manifest_digest_normalizes_portable_database_path_separators() -> None:
+    forward = make_manifest(
+        make_target("demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb")
+    )
+    windows = make_manifest(
+        make_target(r"demo\fixtures\lineage-fuzzer\lineage_fuzzer.duckdb")
+    )
+
+    assert forward.sha256 == windows.sha256
+    assert windows.model_dump(mode="json")["targets"][0]["database_path"] == (
+        "demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb"
+    )
+
+def test_manifest_canonicalizes_unordered_target_tags() -> None:
+    manifest = make_manifest()
+
+    serialized_tags = manifest.model_dump(mode="json")["targets"][0]["tags"]
+    assert serialized_tags == sorted(serialized_tags)
+
+
 def test_manifest_digest_changes_with_seed() -> None:
     first = make_manifest()
     second = CampaignManifest(**{**first.model_dump(), "seed": first.seed + 1})

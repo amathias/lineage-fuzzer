@@ -1,0 +1,84 @@
+{
+  "campaign_id": "3277856c-3d69-5467-98d5-38a4e3b1e0a2",
+  "created_at": "2026-07-25T12:00:00Z",
+  "faults": [
+    {
+      "expected_affected_urns": [
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+      ],
+      "expected_control_urns": [],
+      "fault_id": "scale-order-amounts-100x",
+      "kind": "numeric_scale",
+      "parameters": {
+        "column": "amount_cents",
+        "factor": 100,
+        "row_count": 12
+      },
+      "restore_action": "restore_snapshot",
+      "target_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+    },
+    {
+      "expected_affected_urns": [
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+      ],
+      "expected_control_urns": [],
+      "fault_id": "stale-order-partitions-45d",
+      "kind": "stale_partition",
+      "parameters": {
+        "days": 45,
+        "partition_column": "source_partition",
+        "row_count": 12,
+        "timestamp_column": "order_ts"
+      },
+      "restore_action": "restore_snapshot",
+      "target_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+    },
+    {
+      "expected_affected_urns": [
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+        "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+      ],
+      "expected_control_urns": [
+        "urn:li:assertion:fuzzer.control.orders-customer-id-not-null"
+      ],
+      "fault_id": "null-customer-density-10pct",
+      "kind": "null_density_surge",
+      "parameters": {
+        "column": "customer_id",
+        "row_count": 12
+      },
+      "restore_action": "restore_snapshot",
+      "target_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+    }
+  ],
+  "graph_snapshot_sha256": "12b6bd917e6a1d28614f7d696ff39c26231e80659ea79c66481103cbeca31330",
+  "schema_version": "1.0",
+  "seed": 20260724,
+  "targets": [
+    {
+      "custom_properties": {
+        "sandbox": "true"
+      },
+      "database_path": "demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb",
+      "environment": "DEV",
+      "platform": "duckdb",
+      "schema_name": "raw",
+      "table_name": "orders",
+      "tags": [
+        "lineage-fuzzer-sandbox",
+        "project-lineage-fuzzer"
+      ],
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+    }
+  ]
+}

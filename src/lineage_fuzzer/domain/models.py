@@ -8,7 +8,14 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 
 class FaultKind(StrEnum):
@@ -35,6 +42,20 @@ class TargetDescriptor(BaseModel):
     @classmethod
     def normalize_identity(cls, value: str) -> str:
         return value.strip()
+
+    @field_validator("database_path", mode="before")
+    @classmethod
+    def normalize_database_path(cls, value: object) -> object:
+        return value.replace("\\", "/") if isinstance(value, str) else value
+
+    @field_serializer("database_path")
+    def serialize_database_path(self, value: Path) -> str:
+        return value.as_posix()
+
+    @field_serializer("tags")
+    def serialize_tags(self, value: frozenset[str]) -> list[str]:
+        return sorted(value)
+
 
 
 class FaultSpecification(BaseModel):

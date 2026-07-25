@@ -1,5 +1,23 @@
 # Lineage Fuzzer
 
+Lineage Fuzzer now includes the complete deterministic vertical slice: three sandbox-only
+semantic fault adapters, lineage-predicted versus checksum-observed blast radius, a measured
+1/3 baseline, a generated and validated SQL control artifact, a 3/3 rerun, verified restoration,
+and a single-screen judge demo.
+
+The live DataHub catalog/assertion read-write-re-read-restore proof remains preserved separately.
+See [the judge runbook](./docs/JUDGE_DEMO.md) for the exact local commands, approval digest,
+evidence map, and live-context capture flow.
+
+```powershell
+$env:PYTHONPATH = "src"
+.venv\Scripts\python.exe -m lineage_fuzzer.demo_cli plan
+$env:LINEAGE_FUZZER_INJECTION_ENABLED = "true"
+.venv\Scripts\lineage-fuzzer.exe serve --host 127.0.0.1 --port 8104
+```
+
+Open `http://127.0.0.1:8104`, review the immutable digest, and approve the campaign.
+
 ## Submission title
 
 **Lineage Fuzzer: Chaos Engineering for the Data Graph**
@@ -45,6 +63,7 @@ The first campaign injects three silent faults and existing monitors catch only 
 
 ## Workspace map
 
+- [Judge demo runbook](./docs/JUDGE_DEMO.md)
 - [Project brief](./PROJECT_BRIEF.md)
 - [Build plan](./BUILD_PLAN.md)
 - [Demo and submission](./DEMO_AND_SUBMISSION.md)

@@ -1,0 +1,984 @@
+{
+  "approval": {
+    "approved_at": "2026-07-25T20:53:29.319045Z",
+    "approved_by": "committed-local-demo",
+    "manifest_sha256": "b952f3635f1025b5ff7e1a64c3747c4cb4d88d3bde930f13373ebdcff8bd27cd"
+  },
+  "baseline": {
+    "coverage_percent": 33.3,
+    "detected_faults": 1,
+    "fault_runs": [
+      {
+        "artifact_violations": {},
+        "blast_radius": {
+          "matched_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "missed_urns": [],
+          "observed_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "predicted_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "unexpected_urns": []
+        },
+        "controls": [
+          {
+            "control_id": "orders_customer_id_not_null",
+            "detects_faults": [
+              "null_density_surge"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_order_id_unique",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "daily_revenue_non_negative",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "marts.daily_revenue",
+            "violation_count": 0
+          }
+        ],
+        "detected": false,
+        "failing_control_ids": [],
+        "fault_id": "scale-order-amounts-100x",
+        "kind": "numeric_scale",
+        "mutation": {
+          "after_values_sha256": "3e61b19688e492fb61893e343d96f93bacd49d93401121e84e55375c6159e83f",
+          "before_values_sha256": "65c43de284958fad5e0cc7cc368c4c7726764b02d8855903258845afcf931ba8",
+          "fault_id": "scale-order-amounts-100x",
+          "kind": "numeric_scale",
+          "mutated_primary_keys": [
+            11,
+            25,
+            51,
+            55,
+            63,
+            68,
+            72,
+            76,
+            104,
+            110,
+            114,
+            116
+          ]
+        },
+        "restoration_verified": true,
+        "safety_checks": [
+          "injection-explicitly-enabled",
+          "approval-bound-to-manifest",
+          "target-in-manifest",
+          "urn-prefix-and-identity-allocated",
+          "platform-allowlisted",
+          "environment-allowlisted",
+          "database-path-exactly-allowlisted",
+          "datahub-sandbox-marker-present",
+          "datahub-project-tag-present",
+          "datahub-sandbox-tag-present"
+        ]
+      },
+      {
+        "artifact_violations": {},
+        "blast_radius": {
+          "matched_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "missed_urns": [],
+          "observed_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "predicted_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "unexpected_urns": []
+        },
+        "controls": [
+          {
+            "control_id": "orders_customer_id_not_null",
+            "detects_faults": [
+              "null_density_surge"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_order_id_unique",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "daily_revenue_non_negative",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "marts.daily_revenue",
+            "violation_count": 0
+          }
+        ],
+        "detected": false,
+        "failing_control_ids": [],
+        "fault_id": "stale-order-partitions-45d",
+        "kind": "stale_partition",
+        "mutation": {
+          "after_values_sha256": "10dcbfe4c60f01b050175ef4a85dd06fb9908425e3fa50fa8c1b0d877ed62d7a",
+          "before_values_sha256": "08db3df7bba05e8f5136650bda93bd3583cabf00262b23edd493ddb75063d2b4",
+          "fault_id": "stale-order-partitions-45d",
+          "kind": "stale_partition",
+          "mutated_primary_keys": [
+            5,
+            12,
+            27,
+            35,
+            46,
+            63,
+            64,
+            71,
+            77,
+            93,
+            104,
+            118
+          ]
+        },
+        "restoration_verified": true,
+        "safety_checks": [
+          "injection-explicitly-enabled",
+          "approval-bound-to-manifest",
+          "target-in-manifest",
+          "urn-prefix-and-identity-allocated",
+          "platform-allowlisted",
+          "environment-allowlisted",
+          "database-path-exactly-allowlisted",
+          "datahub-sandbox-marker-present",
+          "datahub-project-tag-present",
+          "datahub-sandbox-tag-present"
+        ]
+      },
+      {
+        "artifact_violations": {},
+        "blast_radius": {
+          "matched_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "missed_urns": [],
+          "observed_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "predicted_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "unexpected_urns": []
+        },
+        "controls": [
+          {
+            "control_id": "orders_customer_id_not_null",
+            "detects_faults": [
+              "null_density_surge"
+            ],
+            "passed": false,
+            "target_table": "raw.orders",
+            "violation_count": 12
+          },
+          {
+            "control_id": "orders_order_id_unique",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "daily_revenue_non_negative",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "marts.daily_revenue",
+            "violation_count": 0
+          }
+        ],
+        "detected": true,
+        "failing_control_ids": [
+          "orders_customer_id_not_null"
+        ],
+        "fault_id": "null-customer-density-10pct",
+        "kind": "null_density_surge",
+        "mutation": {
+          "after_values_sha256": "1f0a7c3daa68c723b0a1c39d1dd351500ee630f440aa11aadca25a3af032feb7",
+          "before_values_sha256": "882f24afc604948055919984fc55b5318c7257fcf863587e1951640cfcf4a39f",
+          "fault_id": "null-customer-density-10pct",
+          "kind": "null_density_surge",
+          "mutated_primary_keys": [
+            2,
+            4,
+            19,
+            24,
+            43,
+            47,
+            48,
+            59,
+            83,
+            84,
+            88,
+            115
+          ]
+        },
+        "restoration_verified": true,
+        "safety_checks": [
+          "injection-explicitly-enabled",
+          "approval-bound-to-manifest",
+          "target-in-manifest",
+          "urn-prefix-and-identity-allocated",
+          "platform-allowlisted",
+          "environment-allowlisted",
+          "database-path-exactly-allowlisted",
+          "datahub-sandbox-marker-present",
+          "datahub-project-tag-present",
+          "datahub-sandbox-tag-present"
+        ]
+      }
+    ],
+    "matrix": [
+      {
+        "detected": false,
+        "failing_control_ids": [],
+        "fault_id": "scale-order-amounts-100x",
+        "kind": "numeric_scale"
+      },
+      {
+        "detected": false,
+        "failing_control_ids": [],
+        "fault_id": "stale-order-partitions-45d",
+        "kind": "stale_partition"
+      },
+      {
+        "detected": true,
+        "failing_control_ids": [
+          "orders_customer_id_not_null"
+        ],
+        "fault_id": "null-customer-density-10pct",
+        "kind": "null_density_surge"
+      }
+    ],
+    "phase": "baseline",
+    "total_faults": 3
+  },
+  "baseline_checksums": {
+    "marts.customer_value": "f2eabc328fda7b9c8d5bab26f4a1af70ed9fa848610b7c9654f1652fc5ee4d90",
+    "marts.daily_revenue": "ea40e08d8f0ce901c85254f85fa9528a8b4d0a001f8e397e2038154a96e2b0b8",
+    "raw.customers": "ad8d7219f4cee95d3cd41bc200ca88397a018e37e56919dd23fb95fd42565d6d",
+    "raw.orders": "f875a3c71c760e64fa935ee9afb08c703e088d21ecf253a4870936d5cc0c6c3e",
+    "reporting.executive_dashboard": "7e4991b81d388583628d5d89b8dcb0bc0eba99d9d6e56298e773a12bdd69c12d",
+    "staging.orders_enriched": "c89434236cb27080e79682745ae36f2c3ada61298259fa3ec57f4148accca2aa"
+  },
+  "context": {
+    "assertions": [
+      {
+        "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+        "field": "customer_id",
+        "type": "not_null",
+        "urn": "urn:li:assertion:fuzzer.control.orders-customer-id-not-null"
+      },
+      {
+        "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+        "field": "order_id",
+        "type": "unique",
+        "urn": "urn:li:assertion:fuzzer.control.orders-order-id-unique"
+      },
+      {
+        "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+        "field": "revenue_cents",
+        "type": "non_negative",
+        "urn": "urn:li:assertion:fuzzer.control.daily-revenue-non-negative"
+      }
+    ],
+    "captured_at": "2026-07-25T12:00:00Z",
+    "entities": [
+      {
+        "customProperties": {
+          "sandbox": "true"
+        },
+        "environment": "DEV",
+        "name": "fuzzer.raw.customers",
+        "owners": [
+          "urn:li:corpuser:lineage-fuzzer"
+        ],
+        "platform": "duckdb",
+        "schemaFields": [],
+        "tags": [
+          "project-lineage-fuzzer",
+          "lineage-fuzzer-sandbox"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.customers,DEV)"
+      },
+      {
+        "customProperties": {
+          "sandbox": "true"
+        },
+        "environment": "DEV",
+        "name": "fuzzer.raw.orders",
+        "owners": [
+          "urn:li:corpuser:lineage-fuzzer"
+        ],
+        "platform": "duckdb",
+        "schemaFields": [
+          "order_id",
+          "customer_id",
+          "order_ts",
+          "amount_cents",
+          "currency",
+          "source_partition"
+        ],
+        "tags": [
+          "project-lineage-fuzzer",
+          "lineage-fuzzer-sandbox"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+      },
+      {
+        "customProperties": {
+          "sandbox": "true"
+        },
+        "environment": "DEV",
+        "name": "fuzzer.staging.orders_enriched",
+        "owners": [
+          "urn:li:corpuser:lineage-fuzzer"
+        ],
+        "platform": "duckdb",
+        "schemaFields": [
+          "order_id",
+          "customer_id",
+          "customer_name",
+          "segment",
+          "country_code",
+          "order_ts",
+          "order_date",
+          "amount_cents",
+          "currency",
+          "source_partition"
+        ],
+        "tags": [
+          "project-lineage-fuzzer",
+          "lineage-fuzzer-sandbox"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+      },
+      {
+        "customProperties": {
+          "sandbox": "true"
+        },
+        "environment": "DEV",
+        "name": "fuzzer.marts.daily_revenue",
+        "owners": [
+          "urn:li:corpuser:lineage-fuzzer"
+        ],
+        "platform": "duckdb",
+        "schemaFields": [
+          "order_date",
+          "currency",
+          "order_count",
+          "revenue_cents"
+        ],
+        "tags": [
+          "project-lineage-fuzzer",
+          "lineage-fuzzer-sandbox"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)"
+      },
+      {
+        "customProperties": {
+          "sandbox": "true"
+        },
+        "environment": "DEV",
+        "name": "fuzzer.marts.customer_value",
+        "owners": [
+          "urn:li:corpuser:lineage-fuzzer"
+        ],
+        "platform": "duckdb",
+        "schemaFields": [
+          "customer_id",
+          "customer_name",
+          "segment",
+          "country_code",
+          "order_count",
+          "lifetime_value_cents",
+          "last_order_ts"
+        ],
+        "tags": [
+          "project-lineage-fuzzer",
+          "lineage-fuzzer-sandbox"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)"
+      },
+      {
+        "customProperties": {
+          "sandbox": "true"
+        },
+        "environment": "DEV",
+        "name": "fuzzer.reporting.executive_dashboard",
+        "owners": [
+          "urn:li:corpuser:lineage-fuzzer"
+        ],
+        "platform": "duckdb",
+        "schemaFields": [
+          "active_customers",
+          "total_orders",
+          "total_revenue_cents",
+          "latest_order_ts"
+        ],
+        "tags": [
+          "project-lineage-fuzzer",
+          "lineage-fuzzer-sandbox"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)"
+      }
+    ],
+    "lineage": [
+      {
+        "downstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)",
+        "upstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.customers,DEV)"
+      },
+      {
+        "downstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)",
+        "upstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+      },
+      {
+        "downstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+        "upstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+      },
+      {
+        "downstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+        "upstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+      },
+      {
+        "downstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+        "upstream_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)"
+      }
+    ],
+    "source": "local-fixture-topology"
+  },
+  "final_checksums": {
+    "marts.customer_value": "f2eabc328fda7b9c8d5bab26f4a1af70ed9fa848610b7c9654f1652fc5ee4d90",
+    "marts.daily_revenue": "ea40e08d8f0ce901c85254f85fa9528a8b4d0a001f8e397e2038154a96e2b0b8",
+    "raw.customers": "ad8d7219f4cee95d3cd41bc200ca88397a018e37e56919dd23fb95fd42565d6d",
+    "raw.orders": "f875a3c71c760e64fa935ee9afb08c703e088d21ecf253a4870936d5cc0c6c3e",
+    "reporting.executive_dashboard": "7e4991b81d388583628d5d89b8dcb0bc0eba99d9d6e56298e773a12bdd69c12d",
+    "staging.orders_enriched": "c89434236cb27080e79682745ae36f2c3ada61298259fa3ec57f4148accca2aa"
+  },
+  "generated_artifact": {
+    "clean_execution_passed": true,
+    "clean_violations": {
+      "orders_amount_cents_reasonable": 0,
+      "orders_partition_not_stale": 0
+    },
+    "control_ids": [
+      "orders_amount_cents_reasonable",
+      "orders_partition_not_stale"
+    ],
+    "path": "lineage_fuzzer_generated_controls.sql",
+    "policy_checks": [
+      "single-statement",
+      "read-only-select",
+      "forbidden-operations-absent",
+      "approved-table-only"
+    ],
+    "sha256": "a5d3f3dd8ae5ae05f21f870dff9d57d639fa6fa9a7d82d4b5a23848fb559fd52"
+  },
+  "improved": {
+    "coverage_percent": 100.0,
+    "detected_faults": 3,
+    "fault_runs": [
+      {
+        "artifact_violations": {
+          "orders_amount_cents_reasonable": 12,
+          "orders_partition_not_stale": 0
+        },
+        "blast_radius": {
+          "matched_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "missed_urns": [],
+          "observed_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "predicted_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "unexpected_urns": []
+        },
+        "controls": [
+          {
+            "control_id": "orders_customer_id_not_null",
+            "detects_faults": [
+              "null_density_surge"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_order_id_unique",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "daily_revenue_non_negative",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "marts.daily_revenue",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_amount_cents_reasonable",
+            "detects_faults": [
+              "numeric_scale"
+            ],
+            "passed": false,
+            "target_table": "raw.orders",
+            "violation_count": 12
+          },
+          {
+            "control_id": "orders_partition_not_stale",
+            "detects_faults": [
+              "stale_partition"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          }
+        ],
+        "detected": true,
+        "failing_control_ids": [
+          "orders_amount_cents_reasonable"
+        ],
+        "fault_id": "scale-order-amounts-100x",
+        "kind": "numeric_scale",
+        "mutation": {
+          "after_values_sha256": "3e61b19688e492fb61893e343d96f93bacd49d93401121e84e55375c6159e83f",
+          "before_values_sha256": "65c43de284958fad5e0cc7cc368c4c7726764b02d8855903258845afcf931ba8",
+          "fault_id": "scale-order-amounts-100x",
+          "kind": "numeric_scale",
+          "mutated_primary_keys": [
+            11,
+            25,
+            51,
+            55,
+            63,
+            68,
+            72,
+            76,
+            104,
+            110,
+            114,
+            116
+          ]
+        },
+        "restoration_verified": true,
+        "safety_checks": [
+          "injection-explicitly-enabled",
+          "approval-bound-to-manifest",
+          "target-in-manifest",
+          "urn-prefix-and-identity-allocated",
+          "platform-allowlisted",
+          "environment-allowlisted",
+          "database-path-exactly-allowlisted",
+          "datahub-sandbox-marker-present",
+          "datahub-project-tag-present",
+          "datahub-sandbox-tag-present"
+        ]
+      },
+      {
+        "artifact_violations": {
+          "orders_amount_cents_reasonable": 0,
+          "orders_partition_not_stale": 12
+        },
+        "blast_radius": {
+          "matched_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "missed_urns": [],
+          "observed_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "predicted_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "unexpected_urns": []
+        },
+        "controls": [
+          {
+            "control_id": "orders_customer_id_not_null",
+            "detects_faults": [
+              "null_density_surge"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_order_id_unique",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "daily_revenue_non_negative",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "marts.daily_revenue",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_amount_cents_reasonable",
+            "detects_faults": [
+              "numeric_scale"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_partition_not_stale",
+            "detects_faults": [
+              "stale_partition"
+            ],
+            "passed": false,
+            "target_table": "raw.orders",
+            "violation_count": 12
+          }
+        ],
+        "detected": true,
+        "failing_control_ids": [
+          "orders_partition_not_stale"
+        ],
+        "fault_id": "stale-order-partitions-45d",
+        "kind": "stale_partition",
+        "mutation": {
+          "after_values_sha256": "10dcbfe4c60f01b050175ef4a85dd06fb9908425e3fa50fa8c1b0d877ed62d7a",
+          "before_values_sha256": "08db3df7bba05e8f5136650bda93bd3583cabf00262b23edd493ddb75063d2b4",
+          "fault_id": "stale-order-partitions-45d",
+          "kind": "stale_partition",
+          "mutated_primary_keys": [
+            5,
+            12,
+            27,
+            35,
+            46,
+            63,
+            64,
+            71,
+            77,
+            93,
+            104,
+            118
+          ]
+        },
+        "restoration_verified": true,
+        "safety_checks": [
+          "injection-explicitly-enabled",
+          "approval-bound-to-manifest",
+          "target-in-manifest",
+          "urn-prefix-and-identity-allocated",
+          "platform-allowlisted",
+          "environment-allowlisted",
+          "database-path-exactly-allowlisted",
+          "datahub-sandbox-marker-present",
+          "datahub-project-tag-present",
+          "datahub-sandbox-tag-present"
+        ]
+      },
+      {
+        "artifact_violations": {
+          "orders_amount_cents_reasonable": 0,
+          "orders_partition_not_stale": 0
+        },
+        "blast_radius": {
+          "matched_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "missed_urns": [],
+          "observed_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "predicted_urns": [
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+            "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+          ],
+          "unexpected_urns": []
+        },
+        "controls": [
+          {
+            "control_id": "orders_customer_id_not_null",
+            "detects_faults": [
+              "null_density_surge"
+            ],
+            "passed": false,
+            "target_table": "raw.orders",
+            "violation_count": 12
+          },
+          {
+            "control_id": "orders_order_id_unique",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "daily_revenue_non_negative",
+            "detects_faults": [],
+            "passed": true,
+            "target_table": "marts.daily_revenue",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_amount_cents_reasonable",
+            "detects_faults": [
+              "numeric_scale"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          },
+          {
+            "control_id": "orders_partition_not_stale",
+            "detects_faults": [
+              "stale_partition"
+            ],
+            "passed": true,
+            "target_table": "raw.orders",
+            "violation_count": 0
+          }
+        ],
+        "detected": true,
+        "failing_control_ids": [
+          "orders_customer_id_not_null"
+        ],
+        "fault_id": "null-customer-density-10pct",
+        "kind": "null_density_surge",
+        "mutation": {
+          "after_values_sha256": "1f0a7c3daa68c723b0a1c39d1dd351500ee630f440aa11aadca25a3af032feb7",
+          "before_values_sha256": "882f24afc604948055919984fc55b5318c7257fcf863587e1951640cfcf4a39f",
+          "fault_id": "null-customer-density-10pct",
+          "kind": "null_density_surge",
+          "mutated_primary_keys": [
+            2,
+            4,
+            19,
+            24,
+            43,
+            47,
+            48,
+            59,
+            83,
+            84,
+            88,
+            115
+          ]
+        },
+        "restoration_verified": true,
+        "safety_checks": [
+          "injection-explicitly-enabled",
+          "approval-bound-to-manifest",
+          "target-in-manifest",
+          "urn-prefix-and-identity-allocated",
+          "platform-allowlisted",
+          "environment-allowlisted",
+          "database-path-exactly-allowlisted",
+          "datahub-sandbox-marker-present",
+          "datahub-project-tag-present",
+          "datahub-sandbox-tag-present"
+        ]
+      }
+    ],
+    "matrix": [
+      {
+        "detected": true,
+        "failing_control_ids": [
+          "orders_amount_cents_reasonable"
+        ],
+        "fault_id": "scale-order-amounts-100x",
+        "kind": "numeric_scale"
+      },
+      {
+        "detected": true,
+        "failing_control_ids": [
+          "orders_partition_not_stale"
+        ],
+        "fault_id": "stale-order-partitions-45d",
+        "kind": "stale_partition"
+      },
+      {
+        "detected": true,
+        "failing_control_ids": [
+          "orders_customer_id_not_null"
+        ],
+        "fault_id": "null-customer-density-10pct",
+        "kind": "null_density_surge"
+      }
+    ],
+    "phase": "improved",
+    "total_faults": 3
+  },
+  "manifest": {
+    "campaign_id": "3277856c-3d69-5467-98d5-38a4e3b1e0a2",
+    "created_at": "2026-07-25T12:00:00Z",
+    "faults": [
+      {
+        "expected_affected_urns": [
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+        ],
+        "expected_control_urns": [],
+        "fault_id": "scale-order-amounts-100x",
+        "kind": "numeric_scale",
+        "parameters": {
+          "column": "amount_cents",
+          "factor": 100,
+          "row_count": 12
+        },
+        "restore_action": "restore_snapshot",
+        "target_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+      },
+      {
+        "expected_affected_urns": [
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.daily_revenue,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+        ],
+        "expected_control_urns": [],
+        "fault_id": "stale-order-partitions-45d",
+        "kind": "stale_partition",
+        "parameters": {
+          "days": 45,
+          "partition_column": "source_partition",
+          "row_count": 12,
+          "timestamp_column": "order_ts"
+        },
+        "restore_action": "restore_snapshot",
+        "target_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+      },
+      {
+        "expected_affected_urns": [
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.marts.customer_value,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.reporting.executive_dashboard,DEV)",
+          "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.staging.orders_enriched,DEV)"
+        ],
+        "expected_control_urns": [
+          "urn:li:assertion:fuzzer.control.orders-customer-id-not-null"
+        ],
+        "fault_id": "null-customer-density-10pct",
+        "kind": "null_density_surge",
+        "parameters": {
+          "column": "customer_id",
+          "row_count": 12
+        },
+        "restore_action": "restore_snapshot",
+        "target_urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+      }
+    ],
+    "graph_snapshot_sha256": "12b6bd917e6a1d28614f7d696ff39c26231e80659ea79c66481103cbeca31330",
+    "schema_version": "1.0",
+    "seed": 20260724,
+    "targets": [
+      {
+        "custom_properties": {
+          "sandbox": "true"
+        },
+        "database_path": "demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb",
+        "environment": "DEV",
+        "platform": "duckdb",
+        "schema_name": "raw",
+        "table_name": "orders",
+        "tags": [
+          "lineage-fuzzer-sandbox",
+          "project-lineage-fuzzer"
+        ],
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)"
+      }
+    ]
+  },
+  "replay_sha256": "5e7c9171bcfc0f24d3165711b5690f74a6ad3eb69e73b54187d0bb26cc1fa9f4",
+  "restoration_verified": true,
+  "status": "proved_and_restored"
+}

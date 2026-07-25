@@ -34,6 +34,10 @@ class Settings(BaseSettings):
         Path(".lineage-fuzzer"),
         validation_alias=AliasChoices("APP_STATE_DIR", "LINEAGE_FUZZER_STATE_DIR"),
     )
+    campaign_context_file: Path | None = Field(
+        None,
+        alias="LINEAGE_FUZZER_CONTEXT_FILE",
+    )
     fixture_root: Path = Field(
         Path("demo/fixtures/lineage-fuzzer"),
         alias="DEMO_FIXTURE_ROOT",

@@ -94,3 +94,42 @@ the CLI. Approval mismatch, foreign URNs, foreign runtime allocation, missing me
 missing credentials fail before a write. The four proof phases are persisted atomically as
 whitelisted, token-free JSON receipts under `APP_STATE_DIR/datahub-receipts/`; raw headers,
 credentials, and server payloads are never written to evidence.
+
+## ADR-008: Semantic campaign evidence is checksum-based and fault-isolated
+
+- **Status:** Accepted
+- **Date:** 2026-07-25
+
+The vertical slice implements exactly three materially different adapters: numeric scale,
+partition staleness, and null-density surge. Seed plus fault ID deterministically selects primary
+keys, and evidence records selected keys plus before/after value hashes rather than raw row data.
+
+Each fault starts from the same fixture snapshot. The app materializes all managed downstream
+tables, compares their canonical checksums with the clean state, and requires the observed changed
+URNs to equal the fault-specific predicted URNs. A mismatch fails the campaign before evidence can
+claim success. Restoration is checksum-verified after every fault and again in an unconditional
+final cleanup path.
+
+This makes detection attribution and blast-radius comparison reproducible while preventing
+cross-fault contamination.
+
+## ADR-009: Generated controls use a strict read-only SQL policy
+
+- **Status:** Accepted
+- **Date:** 2026-07-25
+
+The initial generator is deterministic and schema/gap-grounded. It emits one DuckDB SQL artifact
+with the missing amount-range and partition-freshness controls. Before execution, the validator
+requires a single read-only statement, only the approved `raw.orders` relation, and the expected
+control IDs. Mutation, attachment, file access, installation, pragma, and multi-statement forms are
+denied.
+
+The artifact must execute cleanly before the improved campaign. It then runs after each fault
+alongside the typed application controls, and the campaign is successful only when coverage moves
+from the designed 1/3 baseline to 3/3.
+
+Offline development uses an explicit `local-fixture-topology` context. A separate authenticated
+capture command reads entity, schema, downstream lineage, and assertions through DataHub MCP and
+GraphQL, persists only a typed snapshot marked `datahub-mcp-live`, and binds its digest into a new
+manifest approval. The API refuses to load a context file without that live marker and lineage.
+This prevents offline fixture topology from being presented as newly captured live metadata.

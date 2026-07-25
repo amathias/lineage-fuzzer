@@ -36,9 +36,9 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `Live DataHub catalog/write/re-read/restore/isolation gate complete` |
-| Milestone | Approved assertion reset/write/re-read/restore receipts against seeded live catalog |
-| Verified commit/artifact | `3f6adf08065852f4cd779b3565a979077dcab7be` deployed and live-verified |
+| Status | `Local three-fault judge campaign complete; prior live DataHub proof preserved` |
+| Milestone | Deterministic fault/coverage/generation/restoration vertical slice plus judge UI |
+| Verified commit/artifact | This clean candidate carries local replay `5e7c9171bcfc0f24d3165711b5690f74a6ad3eb69e73b54187d0bb26cc1fa9f4`; deployed live-proof candidate remains `3f6adf08065852f4cd779b3565a979077dcab7be` |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
@@ -49,6 +49,9 @@ live EC2 host from this project chat.
 | DataHub proof reset | `lineage-fuzzer reset-datahub-proof --approval-sha256 75a4d4f9bedb54bfb847ee1e4ea83b33450c2cf6664cf6fe8c8aa16f7d53094e` |
 | Reset command | `python -m lineage_fuzzer.pipeline_cli seed` (deterministic destructive reset is implemented as a fresh scoped reseed) |
 | Baseline controls | `python -m lineage_fuzzer.pipeline_cli controls` |
+| Campaign plan | `python -m lineage_fuzzer.demo_cli plan` (non-mutating; prints manifest and context-bound approval SHA-256) |
+| Campaign run | `python -m lineage_fuzzer.demo_cli --artifact-root examples/generated --evidence-root examples run --approval-sha256 b952f3635f1025b5ff7e1a64c3747c4cb4d88d3bde930f13373ebdcff8bd27cd` |
+| Live context capture | `python -m lineage_fuzzer.demo_cli capture-live-context --output <APP_STATE_DIR>/campaign-context.json` (read-only; requires runtime token) |
 | Snapshot command | `python -m lineage_fuzzer.pipeline_cli snapshot` |
 | Restore command | `python -m lineage_fuzzer.pipeline_cli restore <manifest.json>` |
 | Run command | `lineage-fuzzer serve --host 127.0.0.1 --port 8104` |
@@ -59,8 +62,8 @@ live EC2 host from this project chat.
 | Long-running workers | None |
 | DataHub read | Public readiness 200 before/after proof; exact fixed assertion association and result re-read verified live |
 | DataHub writeback | Fixed assertion write/result succeeded live; all four proof receipts verified; assertion restored absent |
-| Blockers | None for the live DataHub integration/isolation gate |
-| Evidence produced | 64 passing tests; Ruff clean; five receipt hashes; exact after/restore payloads; byte-identical 253-row foreign baseline |
+| Blockers | None for the local judge campaign or completed live integration gate; fresh live campaign-context capture was not attempted from this no-AWS project chat |
+| Evidence produced | 83 passing tests; Ruff clean; local 1/3 to 3/3 report and generated SQL; preserved five live receipt hashes, exact after/restore payloads, and byte-identical 253-row foreign baseline |
 
 ## Required environment variables
 
@@ -85,6 +88,7 @@ DATAHUB_PROJECT_TAG=project-lineage-fuzzer
 DATAHUB_URN_PREFIX=fuzzer.
 LINEAGE_FUZZER_READINESS_DATASET_URN=urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)
 DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
+LINEAGE_FUZZER_CONTEXT_FILE=<optional-saved-live-context-path>
 ```
 
 ## Implemented proof
@@ -99,6 +103,51 @@ DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 - An exception inside a campaign still restores the exact original checksums.
 - Mutation authorization now also requires the exact `project-lineage-fuzzer` tag and validates
   platform, environment, entity identity, and the `fuzzer.` dataset-name prefix.
+
+## Deterministic semantic campaign status
+
+The new project-owned vertical slice is complete locally:
+
+- Seed `20260724`, context digest
+  `12b6bd917e6a1d28614f7d696ff39c26231e80659ea79c66481103cbeca31330`, and
+  UUIDv5 campaign identity produce immutable plan SHA-256
+  `b952f3635f1025b5ff7e1a64c3747c4cb4d88d3bde930f13373ebdcff8bd27cd`.
+- `numeric_scale` deterministically multiplies 12 approved `amount_cents` values by 100.
+- `stale_partition` deterministically shifts 12 latest-customer partitions back 45 days.
+- `null_density_surge` deterministically nulls 12 approved `customer_id` values.
+- Each adapter independently invokes the complete safety gate. Controller authorization occurs
+  before fixture creation or seeding.
+- Every fault starts from the same snapshot. Row IDs and before/after value SHA-256 values are
+  retained; raw mutated values are not.
+- Fault-specific predicted DataHub URNs are compared with changed canonical table checksums. All
+  baseline and improved runs produced exact predicted/observed matches with no missed or unexpected
+  URNs.
+- Existing controls detect only the null-density fault: 1/3 or 33.3% baseline coverage.
+- The deterministic generator emits
+  `examples/generated/lineage_fuzzer_generated_controls.sql`, validates it as a single read-only
+  query against only `raw.orders`, executes it cleanly, and adds amount-range plus
+  partition-freshness controls.
+- The identical campaign then reaches 3/3 or 100.0% coverage.
+- Restoration is verified after every fault and at final cleanup across all six managed table
+  checksums. The report status is `proved_and_restored`.
+- The committed local report replay SHA-256 is
+  `5e7c9171bcfc0f24d3165711b5690f74a6ad3eb69e73b54187d0bb26cc1fa9f4`.
+- The browser-facing `GET /` demo, `GET /api/demo/plan`, and approved
+  `POST /api/demo/run` flow passed locally: page 200, three faults, baseline 1/3, improved 3/3,
+  and restoration true.
+
+Offline examples truthfully use `context_source=local-fixture-topology`. The new
+`capture-live-context` command provides the production seam: it requires an injected token,
+probes `get_entities`, `get_lineage`, and `list_schema_fields`, reads the allocated entity/schema/
+three-hop downstream lineage through MCP, reads assertions through authenticated GraphQL, rejects
+foreign URNs, and atomically stores a typed snapshot marked `datahub-mcp-live`. The API and CLI can
+load that file with `LINEAGE_FUZZER_CONTEXT_FILE` or `--context-file`; any other source marker or
+lineageless file fails closed. A captured context creates a distinct manifest digest and therefore
+requires a fresh explicit approval.
+
+This chat did not access AWS, did not deploy, did not request a token, and did not rerun or alter
+the completed live assertion proof. Coordinator live evidence recorded below remains authoritative
+and unchanged.
 
 ## Readiness contract and live-proof status
 
@@ -292,6 +341,13 @@ before any new success claim.
 - Catalog/proof commands are bounded foreground jobs; they add no workers or recurring load.
 - Assertion visibility polling uses at most six reads per boundary and one strict 15-second
   deadline for both boundaries plus result reporting.
+- A campaign performs six isolated fault runs (three baseline and three improved), restoring before
+  and after each; the localhost end-to-end request completed in approximately 22 seconds.
+- Local campaign evidence is five small JSON/SQL files under `examples/`; the disposable DuckDB and
+  snapshots remain ignored.
+- Live campaign-context capture is one bounded read-only foreground job and adds one JSON snapshot.
+- `POST /api/demo/run` is single-flight per application process; concurrent fixture campaigns
+  receive 409 rather than sharing mutable DuckDB state.
 - There are no workers, migrations, new ports, public services, or infrastructure changes.
 - Readiness performs bounded read-only DuckDB, GraphQL, and MCP queries per request.
 - A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
@@ -302,10 +358,12 @@ before any new success claim.
 
 ## Next project-owned milestone
 
-1. Continue the project-owned three semantic fault adapters and campaign execution milestone.
-2. Use live DataHub lineage and assertion context to produce the deterministic campaign manifest
-   and predicted blast radius.
-3. Preserve the completed live integration receipts and foreign-isolation snapshot as immutable
+1. On a coordinator-controlled host, capture the allocated live DataHub context with the new
+   read-only command, print its distinct plan digest, and run the same guarded local fixture
+   campaign against that saved context.
+2. Preserve the new live-context snapshot digest and campaign report only after exact
+   predicted/observed, 1/3 to 3/3, and restoration checks pass.
+3. Preserve the completed assertion receipts and foreign-isolation snapshot as immutable
    coordinator evidence; do not rerun the proof unless new integration behavior needs verification.
 4. Keep the fixed assertion soft-deleted outside an explicitly approved proof run.
 
