@@ -36,10 +36,10 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `in progress` |
-| Milestone | Deterministic disposable commerce pipeline and verified restoration |
-| Verified commit/artifact | Pending local baseline commit; coordinator records exact hash before promotion |
-| Build command | `python -m pip install -e ".[dev]"` then `python -m pip install -r requirements-fixture.txt` |
+| Status | `code verified; live DataHub proof blocked` |
+| Milestone | Truthful readiness and fail-closed allocation enforcement |
+| Verified commit/artifact | `d4dd9f2084a4c9a773c1ec35e36565ce881ea5a0` |
+| Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
 | Reset command | `python -m lineage_fuzzer.pipeline_cli seed` (deterministic destructive reset is implemented as a fresh scoped reseed) |
@@ -48,20 +48,20 @@ live EC2 host from this project chat.
 | Restore command | `python -m lineage_fuzzer.pipeline_cli restore <manifest.json>` |
 | Run command | `lineage-fuzzer serve --host 127.0.0.1 --port 8104` |
 | Health endpoint | `GET /api/health` verified locally |
-| Readiness endpoint | Not yet implemented; blocks deployment gate |
+| Readiness endpoint | `GET /api/readiness`; returns 200 only when all local and authenticated DataHub checks pass |
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | MCP client and probe implemented; live verification pending shared DataHub |
-| DataHub writeback | GraphQL client implemented; live verification pending shared DataHub |
-| Blockers | Shared DataHub deployment; readiness implementation; live read/write receipts |
-| Evidence produced | 25 passing tests; Ruff clean; fixed-row fixture; canonical SHA-256 evidence; exception-safe exact restoration |
+| DataHub read | MCP client and checks implemented; live receipt blocked until the coordinator supplies the service credential out of band |
+| DataHub writeback | GraphQL client implemented; no live write/re-read/restore receipt claimed |
+| Blockers | Out-of-band DataHub service credential, live tunnel verification, receipt run, and coordinator promotion |
+| Evidence produced | 42 passing tests; Ruff clean; local readiness 503 proves missing state/token honestly; fixture checksum and exception-safe restoration evidence |
 
 ## Required environment variables
 
-The project template now exposes the full shared contract. Current application settings still use
-`LINEAGE_FUZZER_ENVIRONMENT` and `LINEAGE_FUZZER_STATE_DIR`; the coordinator deployment maps those
-aliases from `APP_ENV` and `APP_STATE_DIR` until project code adopts the shared names directly.
+The application consumes `APP_ENV` and `APP_STATE_DIR` directly and retains the original
+`LINEAGE_FUZZER_ENVIRONMENT` and `LINEAGE_FUZZER_STATE_DIR` names as compatibility aliases.
+Secret values are injected only at runtime and must never be written to repository files.
 
 ```text
 PROJECT_SLUG=lineage-fuzzer
@@ -76,6 +76,7 @@ DATAHUB_TOKEN=<secret-injected-at-runtime>
 DATAHUB_DOMAIN=Demo / Lineage Fuzzer
 DATAHUB_PROJECT_TAG=project-lineage-fuzzer
 DATAHUB_URN_PREFIX=fuzzer.
+LINEAGE_FUZZER_READINESS_DATASET_URN=urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)
 DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 ```
 
@@ -89,21 +90,60 @@ DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 - Snapshots are restricted to the coordinator-owned fixture root.
 - Restore compares every managed-table checksum with the pre-campaign snapshot.
 - An exception inside a campaign still restores the exact original checksums.
+- Mutation authorization now also requires the exact `project-lineage-fuzzer` tag and validates
+  platform, environment, entity identity, and the `fuzzer.` dataset-name prefix.
+
+## Readiness contract and live-proof status
+
+`GET /api/readiness` is non-mutating and checks:
+
+1. Exact coordinator slug, domain, project tag, sandbox tag, URN prefix, fixture root, and database
+   allowlist.
+2. Existing readable/writable state directory without creating a probe file.
+3. Existing DuckDB fixture, seed manifest, `sandbox_marker=true`, project slug, and six canonical
+   table checksums using read-only connections.
+4. Authenticated GMS GraphQL connectivity.
+5. MCP availability of `get_entities`, `get_lineage`, and `list_schema_fields`.
+6. The configured readiness entity's `fuzzer.` URN, domain, project tag, sandbox tag, and
+   `sandbox=true` custom property.
+
+Local verification without runtime state or a service credential returns HTTP 503. It reports the
+successful allocation and fixture checks while identifying state, GMS, MCP, and catalog checks as
+not ready. Allocation failure short-circuits all network access.
+
+The live DataHub proof is **blocked, not simulated**:
+
+- `DATAHUB_TOKEN` was absent during this milestone. Its presence was checked without requesting,
+  printing, persisting, or logging a value.
+- No mock result is presented as live evidence.
+- No before/write/after/restore receipts exist yet.
+- The public deployment is still commit `a7d2d51e1f9cd3213d5f822e08c22d3d9c477e33`;
+  `/api/readiness` remains 404 there until the coordinator promotes the verified artifact.
+- The coordinator will issue a verification-only follow-up after providing the credential out of
+  band. This project chat will use local GMS and MCP SSM tunnels and will not deploy.
 
 ## Resource and deployment notes
 
 - DuckDB and snapshots are disposable and ignored by source control.
-- There are no workers or externally reachable services in this milestone.
-- `requirements-fixture.txt` temporarily carries the DuckDB dependency; the project chat should
-  consolidate it into `pyproject.toml` in its next code milestone.
-- Expected application footprint is under 512 MiB; measure it before final deployment handoff.
+- DuckDB is now declared directly in `pyproject.toml`; `requirements-fixture.txt` remains only as
+  a backward-compatible setup aid.
+- There are no workers, migrations, new ports, public services, or infrastructure changes.
+- Readiness performs bounded read-only DuckDB, GraphQL, and MCP queries per request.
+- A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
+  set and 0.016 CPU seconds; treat this as indicative only and remeasure on the deployment host.
+- The application remains one process on internal port 8104 with a 512 MiB deployment ceiling.
+- Rollback target is the previously deployed commit
+  `a7d2d51e1f9cd3213d5f822e08c22d3d9c477e33`.
 
 ## Next project-owned milestone
 
-1. Implement `GET /api/readiness` using the shared contract without mutation.
-2. Implement the three seeded semantic fault adapters and campaign execution.
-3. Preserve before/after evidence and unconditional restoration.
-4. Update this canonical file; do not create another supplemental handoff.
+1. After the coordinator's credential follow-up, open separate local tunnels with
+   `..\infra\scripts\open_tunnel.ps1 -Service gms` and `-Service mcp`.
+2. Run authenticated readiness and preserve the sanitized read receipt.
+3. Perform the specifically approved sandbox-only write/re-read/restore sequence and preserve all
+   four sanitized receipts.
+4. Implement the three seeded semantic fault adapters and campaign execution after the live
+   integration gate is verified.
 
 ## Required deployment handoff format
 

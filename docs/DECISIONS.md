@@ -54,3 +54,21 @@ Each fault runs independently from the same clean snapshot. The fixture is resto
 between faults and again in a final cleanup path. This makes the fault-by-control matrix attributable
 and prevents one mutation from influencing another fault's observation.
 
+## ADR-006: Readiness is authenticated, non-mutating, and allocation-aware
+
+- **Status:** Accepted
+- **Date:** 2026-07-25
+
+Process liveness remains separate from readiness. Readiness never creates probe files or writes to
+DataHub. It verifies the pre-existing state directory, reads the DuckDB fixture and its sandbox
+manifest read-only, probes authenticated GraphQL and MCP capabilities, and validates one allocated
+catalog entity.
+
+The endpoint returns not-ready unless the runtime slug, fixture root, exact database allowlist,
+DataHub domain, project tag, sandbox tag, platform, environment, and `fuzzer.` URN prefix match the
+coordinator contract. Missing credentials and missing catalog metadata are failures, not degraded
+success.
+
+The same allocation rules are enforced again by mutation authorization. This deliberately
+duplicates critical checks across readiness and the mutation boundary so a healthy deployment
+cannot make an out-of-scope target writable.
