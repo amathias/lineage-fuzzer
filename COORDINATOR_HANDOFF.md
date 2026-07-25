@@ -36,9 +36,9 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `guarded catalog and live-proof workflow verified locally; coordinator promotion pending` |
+| Status | `DataHub 1.6 null-systemMetadata compatibility fix verified; coordinator promotion pending` |
 | Milestone | Exact catalog fixture seed plus approved assertion write/re-read/restore receipts |
-| Verified commit/artifact | `c8ca59a9438e703a81b7898b5690539340745731` |
+| Verified commit/artifact | `75c7b1c3918e5f207ae8dafa8f7529c879d6b8b1` |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
@@ -59,8 +59,8 @@ live EC2 host from this project chat.
 | Long-running workers | None |
 | DataHub read | Guarded OpenAPI catalog verification plus existing GraphQL/MCP reads implemented; live receipts pending coordinator run |
 | DataHub writeback | Fixed OpenAPI aspect seed/reset and fixed custom-assertion write/result/re-read/soft-delete restore implemented; no live receipt claimed |
-| Blockers | Coordinator promotion, catalog seed on the shared host, readiness 200 confirmation, and guarded live proof receipt run |
-| Evidence produced | 58 passing tests; Ruff clean; approval, foreign-namespace, missing-marker, sanitized-receipt, re-read, and restoration regressions |
+| Blockers | Compatibility candidate promotion, catalog seed rerun, readiness 200 confirmation, and guarded live proof receipt run |
+| Evidence produced | 59 passing tests; Ruff clean; exact Domain/Tag/dataset aspect wire payloads omit optional null `systemMetadata` |
 
 ## Required environment variables
 
@@ -128,10 +128,29 @@ Commit `08b0ac06a68c836fff781464c645192478cd99a2` addresses both deployment find
 - CSV list fields use pydantic-settings `NoDecode` before the existing splitter.
 - URL and real environment-source regressions pass within the 45-test suite.
 
+Coordinator promotion of exact candidate `497a5ec59c9c119372cf003fb7905b1535e51939`
+established:
+
+- Pre-seed `/api/health` returned 200 and `/api/readiness` truthfully returned 503.
+- Both non-mutating approval SHA-256 values exactly matched this handoff.
+- The coordinator completed an encrypted pre-proof snapshot and hashed 225 foreign
+  Lifeboat/Forget aspect rows.
+- The exact approved catalog seed failed closed on its first Domain request with HTTP 500.
+- DataHub Core 1.6.0 reported `ModelConversionException: Failed to deserialize DataMap: null`
+  while parsing `systemMetadata` in `/openapi/v3/entity/domain`.
+- No catalog receipt or assertion live proof was claimed; foreign projects remained untouched and
+  Fuzzer readiness remained 503.
+
+Commit `75c7b1c3918e5f207ae8dafa8f7529c879d6b8b1` omits the optional
+`systemMetadata` member instead of serializing JSON null. Exact serialized-payload regressions
+cover Domain, Tag, dataset properties, global tags, domains, and status. The two approval digests
+are unchanged because the immutable catalog and assertion plans did not change.
+
 Remaining live proof is **blocked, not simulated**:
 
-- The allocated `fuzzer.` catalog entity and its required metadata are still absent.
-- No live mutation, write, re-read, or restore receipt has been attempted.
+- The allocated `fuzzer.` catalog entity and required metadata remain unverified after the failed
+  first Domain request.
+- No successful live catalog receipt or assertion before/write/after/restore receipt exists.
 - The credential remains coordinator-managed; this project chat did not request or access it.
 
 ### Guarded coordinator runbook
@@ -194,12 +213,12 @@ do not add them to Git.
 - A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
   set and 0.016 CPU seconds; treat this as indicative only and remeasure on the deployment host.
 - The application remains one process on internal port 8104 with a 512 MiB deployment ceiling.
-- Rollback target is the previously deployed commit
-  `2166ef2d464caf41708d33672ec3273ad5f4e02f`.
+- Rollback target is the currently deployed healthy-but-catalog-blocked commit
+  `497a5ec59c9c119372cf003fb7905b1535e51939`.
 
 ## Next project-owned milestone
 
-1. Coordinator promotes the clean handoff candidate without changing the frozen allocation.
+1. Coordinator promotes the null-omission compatibility candidate without changing the allocation.
 2. Run `show-datahub-plans` and confirm both printed digests match this handoff.
 3. Run the approved catalog seed and confirm public `/api/readiness` changes from 503 to 200.
 4. Run the approved proof reset, then the single proof command; archive `before`, `write`, `after`,
