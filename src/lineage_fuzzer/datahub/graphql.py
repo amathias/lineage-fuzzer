@@ -24,8 +24,8 @@ class DataHubGraphQLClient:
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         headers = {"Authorization": f"Bearer {token}"} if token else {}
+        self._endpoint = endpoint.rstrip("/")
         self._client = httpx.AsyncClient(
-            base_url=endpoint,
             headers=headers,
             timeout=timeout_seconds,
             transport=transport,
@@ -160,7 +160,10 @@ class DataHubGraphQLClient:
         *,
         variables: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        response = await self._client.post("", json={"query": query, "variables": variables or {}})
+        response = await self._client.post(
+            self._endpoint,
+            json={"query": query, "variables": variables or {}},
+        )
         response.raise_for_status()
         payload = response.json()
         if errors := payload.get("errors"):
