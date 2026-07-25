@@ -83,3 +83,63 @@ async def test_surfaces_graphql_errors() -> None:
     with pytest.raises(DataHubGraphQLError, match="Edit Assertions denied"):
         await client.probe()
     await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_assertion_query_matches_datahub_1_6_schema_exactly() -> None:
+    captured: dict[str, object] = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "data": {
+                    "dataset": {
+                        "assertions": {
+                            "total": 0,
+                            "assertions": [],
+                        }
+                    }
+                }
+            },
+        )
+
+    client = DataHubGraphQLClient(
+        "http://datahub.test/api/graphql",
+        transport=httpx.MockTransport(handler),
+    )
+    await client.assertions_for_dataset("urn:li:dataset:test")
+    await client.aclose()
+
+    expected = """
+    query LineageFuzzerDatasetAssertions($urn: String!) {
+      dataset(urn: $urn) {
+        assertions(start: 0, count: 1000) {
+          total
+          assertions {
+            urn
+            info {
+              type
+              description
+              customAssertion {
+                type
+                entityUrn
+                logic
+              }
+            }
+            runEvents(status: COMPLETE, limit: 1) {
+              runEvents {
+                timestampMillis
+                result { type nativeResults { key value } }
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+    assert " ".join(str(captured["query"]).split()) == " ".join(expected.split())
+    assert captured["variables"] == {"urn": "urn:li:dataset:test"}
+    assert "customType" not in str(captured["query"])
+    assert "fieldPath" not in str(captured["query"])

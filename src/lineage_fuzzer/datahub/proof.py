@@ -340,7 +340,8 @@ def _normalize_assertions(response: dict[str, Any]) -> list[dict[str, Any]]:
             {
                 "urn": assertion["urn"],
                 "entity_urn": custom.get("entityUrn"),
-                "custom_type": info.get("customType"),
+                "custom_type": custom.get("type"),
+                "logic": custom.get("logic"),
                 "result_type": result.get("type") if isinstance(result, dict) else None,
                 "result_properties": dict(sorted(properties.items())),
                 "timestamp_millis": latest.get("timestampMillis")

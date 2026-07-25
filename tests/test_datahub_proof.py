@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -88,8 +89,11 @@ class FakeProofClients:
                 {
                     "urn": plan.assertion_urn,
                     "info": {
-                        "customType": plan.assertion_type,
-                        "customAssertion": {"entityUrn": plan.dataset_urn},
+                        "customAssertion": {
+                            "type": plan.assertion_type,
+                            "entityUrn": plan.dataset_urn,
+                            "logic": plan.logic,
+                        },
                     },
                     "runEvents": {
                         "runEvents": [
@@ -163,6 +167,13 @@ async def test_proof_writes_rereads_restores_and_persists_four_receipts(
         assert "authorization" not in content
         assert "bearer" not in content
         assert "not-a-real-token" not in content
+
+    after_receipt = json.loads(
+        Path(result["receipt_paths"]["after"]).read_text(encoding="utf-8")
+    )
+    observed = after_receipt["payload"]["assertions"][0]
+    assert observed["custom_type"] == DEFAULT_PROOF_PLAN.assertion_type
+    assert observed["logic"] == DEFAULT_PROOF_PLAN.logic
 
 
 @pytest.mark.asyncio
@@ -271,5 +282,45 @@ async def test_reset_is_approval_bound_and_exactly_scoped(tmp_path: Path) -> Non
                 "entity_urn": ASSERTION_URN,
                 "removed": True,
             },
-        )
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_reset_is_idempotent_when_assertion_is_already_soft_deleted(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    clients = FakeProofClients()
+    service = DataHubAssertionProofService(
+        settings,
+        clients,
+        clients,
+        workspace_root=tmp_path,
+    )
+
+    first = await service.reset(approval_sha256=DEFAULT_PROOF_PLAN.sha256)
+    second = await service.reset(approval_sha256=DEFAULT_PROOF_PLAN.sha256)
+
+    assert first == second
+    assert first["status"] == "reset"
+    assert clients.active is False
+    status_calls = [call for call in clients.calls if call[0] == "status"]
+    assert status_calls == [
+        (
+            "status",
+            {
+                "entity_type": "assertion",
+                "entity_urn": ASSERTION_URN,
+                "removed": True,
+            },
+        ),
+        (
+            "status",
+            {
+                "entity_type": "assertion",
+                "entity_urn": ASSERTION_URN,
+                "removed": True,
+            },
+        ),
     ]

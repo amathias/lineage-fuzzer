@@ -127,11 +127,10 @@ class DataHubGraphQLClient:
                 urn
                 info {
                   type
-                  customType
                   description
                   customAssertion {
+                    type
                     entityUrn
-                    fieldPath
                     logic
                   }
                 }
