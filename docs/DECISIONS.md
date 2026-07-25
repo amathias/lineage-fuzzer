@@ -72,3 +72,25 @@ success.
 The same allocation rules are enforced again by mutation authorization. This deliberately
 duplicates critical checks across readiness and the mutation boundary so a healthy deployment
 cannot make an out-of-scope target writable.
+
+## ADR-007: DataHub fixture and proof writes are fixed, approved, and reversible
+
+- **Status:** Accepted
+- **Date:** 2026-07-25
+
+DataHub catalog fixture creation uses the supported DataHub 1.6 OpenAPI v3 entity-aspect
+interface. The writer is restricted to one fixed domain, two fixed tags, and
+`urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)`. Its canonical aspects
+contain the assigned domain, project tag, sandbox tag, `sandbox=true`, and active status.
+
+The live writeback proof uses DataHub's supported custom-assertion GraphQL operations and one
+fixed assertion URN, `urn:li:assertion:fuzzer.catalog-proof.orders-nonempty`. Before mutation it
+re-reads and validates the dataset's platform, environment, namespace, domain, tags, marker, and
+active status. The proof upserts the assertion, makes it active, reports a deterministic result,
+re-reads the result, and soft-deletes only that assertion in a `finally` restoration path.
+
+Both catalog and assertion plans are immutable and require their exact canonical SHA-256 through
+the CLI. Approval mismatch, foreign URNs, foreign runtime allocation, missing metadata, and
+missing credentials fail before a write. The four proof phases are persisted atomically as
+whitelisted, token-free JSON receipts under `APP_STATE_DIR/datahub-receipts/`; raw headers,
+credentials, and server payloads are never written to evidence.
