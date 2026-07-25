@@ -35,6 +35,19 @@ Before modifying code, read these files completely:
 - Test sandbox enforcement, restoration, fault manifests, scoring, code validation, and reruns.
 - Maintain `docs/DECISIONS.md` as architectural decisions are made.
 
+## GitHub publishing
+
+- Canonical repository: `https://github.com/amathias/lineage-fuzzer`.
+- Configured origin: `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git`.
+- While this chat is the project's primary writer, it may commit and intermittently push verified
+  milestone changes to `origin/main`.
+- Inspect the complete diff, run relevant checks, stage only intended paths, and keep
+  `COORDINATOR_HANDOFF.md` current before pushing.
+- Never change the remote, force push, delete remote refs, use another project's SSH alias, or add
+  secrets, private keys, `.env` files, runtime receipts, or private evidence to Git.
+- If `origin` is absent or differs from the exact value above, stop and escalate to the portfolio
+  coordinator.
+
 ## Definition of done
 
 A reviewer can load the demo graph, select a safe campaign, see the predicted blast radius, inject three faults, observe baseline detection coverage, generate and run missing tests, rerun the campaign at full coverage, confirm fixture restoration, and inspect DataHub writeback.
