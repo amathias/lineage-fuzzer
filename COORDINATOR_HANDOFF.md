@@ -36,9 +36,9 @@ live EC2 host from this project chat.
 
 | Field | Current value |
 |---|---|
-| Status | `DataHub 1.6 null-systemMetadata compatibility fix verified; coordinator promotion pending` |
-| Milestone | Exact catalog fixture seed plus approved assertion write/re-read/restore receipts |
-| Verified commit/artifact | `75c7b1c3918e5f207ae8dafa8f7529c879d6b8b1` |
+| Status | `DataHub 1.6 assertion reread schema fix verified; coordinator promotion pending` |
+| Milestone | Approved assertion reset/write/re-read/restore receipts against seeded live catalog |
+| Verified commit/artifact | `6df411dd542a846431a1aaa0d5c4a9f0f32ea5f1` |
 | Build command | `python -m pip install -e ".[dev]"` |
 | Test command | `python -m pytest` |
 | Seed command | `python -m lineage_fuzzer.pipeline_cli seed` |
@@ -57,10 +57,10 @@ live EC2 host from this project chat.
 | Disposable fixture | `demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb` |
 | Snapshot state | `demo/fixtures/lineage-fuzzer/.snapshots/` |
 | Long-running workers | None |
-| DataHub read | Guarded OpenAPI catalog verification plus existing GraphQL/MCP reads implemented; live receipts pending coordinator run |
-| DataHub writeback | Fixed OpenAPI aspect seed/reset and fixed custom-assertion write/result/re-read/soft-delete restore implemented; no live receipt claimed |
-| Blockers | Compatibility candidate promotion, catalog seed rerun, readiness 200 confirmation, and guarded live proof receipt run |
-| Evidence produced | 59 passing tests; Ruff clean; exact Domain/Tag/dataset aspect wire payloads omit optional null `systemMetadata` |
+| DataHub read | Live catalog seed receipt verified and public readiness 200; corrected assertion reread pending promotion |
+| DataHub writeback | Live catalog write verified; fixed proof assertion soft-delete executed, but successful proof receipts remain pending |
+| Blockers | Assertion-schema candidate promotion, idempotent reset reread, then guarded live proof receipt run |
+| Evidence produced | 61 passing tests; Ruff clean; exact DataHub 1.6 assertion query and already-soft-deleted reset idempotency regressions |
 
 ## Required environment variables
 
@@ -146,11 +146,33 @@ Commit `75c7b1c3918e5f207ae8dafa8f7529c879d6b8b1` omits the optional
 cover Domain, Tag, dataset properties, global tags, domains, and status. The two approval digests
 are unchanged because the immutable catalog and assertion plans did not change.
 
+Coordinator promotion of exact candidate `52047ce3bf1ead25097632803088b75660414c78`
+established:
+
+- The exact approved catalog seed succeeded and its durable catalog receipt was verified.
+- Public `/api/readiness` changed to 200; the Fuzzer catalog allocation remains seeded.
+- The exact approved `reset-datahub-proof` soft-deleted only
+  `urn:li:assertion:fuzzer.catalog-proof.orders-nonempty`.
+- Reset then failed closed during its GraphQL reread because `AssertionInfo.customType` and
+  `CustomAssertionInfo.fieldPath` are undefined in DataHub Core 1.6.0.
+- Guarded live introspection reported `AssertionInfo` fields
+  `[type,datasetAssertion,description,externalUrl,freshnessAssertion,volumeAssertion,sqlAssertion,fieldAssertion,schemaAssertion,customAssertion,source,lastUpdated]`
+  and `CustomAssertionInfo` fields `[type,entityUrn,field,logic]`.
+- No successful assertion proof receipts were claimed. The foreign baseline remained preserved,
+  and the fixed Fuzzer assertion is currently soft-deleted.
+
+Commit `6df411dd542a846431a1aaa0d5c4a9f0f32ea5f1` selects only the required live-supported
+fields: `AssertionInfo.type`, `description`, and `customAssertion`, with
+`CustomAssertionInfo.type`, `entityUrn`, and `logic`. It omits unsupported `customType` and
+`fieldPath` and does not request the unnecessary `field`. The parser reads custom type and logic
+from `customAssertion`. An exact query regression locks this selection, and reset tests prove two
+consecutive calls succeed when the fixed assertion is already soft-deleted.
+
 Remaining live proof is **blocked, not simulated**:
 
-- The allocated `fuzzer.` catalog entity and required metadata remain unverified after the failed
-  first Domain request.
-- No successful live catalog receipt or assertion before/write/after/restore receipt exists.
+- The allocated `fuzzer.` catalog entity is seeded, its catalog receipt is verified, and readiness is 200.
+- The fixed proof assertion is currently soft-deleted after the scoped partial reset.
+- No successful assertion before/write/after/restore receipt set exists yet.
 - The credential remains coordinator-managed; this project chat did not request or access it.
 
 ### Guarded coordinator runbook
@@ -213,17 +235,18 @@ do not add them to Git.
 - A local Windows smoke run reached `/api/health` in 7.265 seconds and reported a 3.9 MiB working
   set and 0.016 CPU seconds; treat this as indicative only and remeasure on the deployment host.
 - The application remains one process on internal port 8104 with a 512 MiB deployment ceiling.
-- Rollback target is the currently deployed healthy-but-catalog-blocked commit
-  `497a5ec59c9c119372cf003fb7905b1535e51939`.
+- Rollback target is the currently deployed seeded/readiness-200 commit
+  `52047ce3bf1ead25097632803088b75660414c78`.
 
 ## Next project-owned milestone
 
-1. Coordinator promotes the null-omission compatibility candidate without changing the allocation.
-2. Run `show-datahub-plans` and confirm both printed digests match this handoff.
-3. Run the approved catalog seed and confirm public `/api/readiness` changes from 503 to 200.
-4. Run the approved proof reset, then the single proof command; archive `before`, `write`, `after`,
-   and `restore` receipts outside Git.
-5. Confirm the proof assertion is absent after restoration and report the exact live evidence
+1. Coordinator promotes the assertion-schema candidate without changing the seeded catalog.
+2. Confirm public readiness remains 200 and both approval digests still match this handoff.
+3. Rerun the approved reset against the already-soft-deleted fixed assertion and verify its
+   restore receipt.
+4. Run the single approved proof command; archive `before`, `write`, `after`, and `restore`
+   receipts outside Git.
+5. Confirm the proof assertion remains absent after restoration and report the exact live evidence
    paths and outcomes back to this project chat.
 6. Only after that live integration gate passes, continue the three semantic fault adapters and
    campaign execution milestone.
