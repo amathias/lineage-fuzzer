@@ -4,17 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Status | `Ready for coordinator promotion retry and guarded live capture` |
-| Product candidate | `472d4d850c9b6e34529eddb0507a4e015987d33f` |
+| Status | `Ready for coordinator promotion and exact reset-receipt recovery` |
+| Product candidate | `92db02471a6bdb517be2db934a146b71509fe442` |
 | Branch | `main` |
 | Canonical origin | `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git` |
 | Milestone | Complete six-dataset/five-edge DataHub contract, strict live context, three-fault campaign, immutable evidence, generated SQL, restoration, and judge UI |
-| Local tests | `120 passed` |
+| Local tests | `122 passed` |
 | Lint | `python -m ruff check src tests scripts` passed |
 | Secret scan | `secret_scan=clean tracked_files=81` |
-| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 120 tests, Ruff, fixture/controls commands, and judge UI smoke |
+| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 122 tests, Ruff, fixture/controls commands, and judge UI smoke |
 | Local campaign | `status=proved_and_restored`, baseline `1/3 (33.3%)`, improved `3/3 (100.0%)`, restoration true |
-| Live status | Coordinator repeatedly verified the approved 6-dataset/5-edge/3-assertion seed, schema ordering, and nonempty nested lineage. Deployed `3a25d79` then rejected the real exact two-key empty-downstreams variant. No live context or judge campaign was claimed. The earlier assertion proof remains preserved. |
+| Live status | Coordinator reports the complete live campaign succeeded on deployed `472d4d8`. Its exact reset then completed all nine allowlisted tombstone writes but failed only during post-mutation GraphQL verification. Context is invalidated and readiness is truthfully 503. The earlier assertion proof remains preserved. |
 | AWS/deployment activity | None from this project task |
 
 This project chat owns Lineage Fuzzer product code and evidence contracts. The portfolio coordinator
@@ -105,10 +105,12 @@ lineage-fuzzer reset-datahub-fixture `
 
 Seed is idempotent, restores every dataset to `removed=false`, activates the three baseline
 assertions, and verifies the complete catalog before writing seeded state. Reset first invalidates
-the current campaign context and receipt, records `started`, soft-deletes only the three exact
-baseline assertions and six exact datasets, verifies their absence/tombstones, and records
-`completed`. A partial failure writes a sanitized `failed` receipt. Repeated reset is idempotent.
-Domain, Tags, proof assertion, and foreign namespaces are retained.
+the current campaign context and receipt and records `started`. It reads the direct status aspect
+for only the three exact baseline assertions and six exact datasets, skips writes for tombstones
+already present, writes only missing exact tombstones, then positively re-reads all nine status
+aspects before recording `completed`. It does not query assertions through soft-deleted datasets.
+A read, write, or postcondition failure writes a sanitized `failed` receipt. Repeated reset is
+idempotent. Domain, Tags, proof assertion, and foreign namespaces are retained.
 
 ## Required deployment environment
 
@@ -129,7 +131,7 @@ DATAHUB_PROJECT_TAG=project-lineage-fuzzer
 DATAHUB_URN_PREFIX=fuzzer.
 DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 LINEAGE_FUZZER_READINESS_DATASET_URN=urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)
-LINEAGE_FUZZER_CANDIDATE_SHA=472d4d850c9b6e34529eddb0507a4e015987d33f
+LINEAGE_FUZZER_CANDIDATE_SHA=92db02471a6bdb517be2db934a146b71509fe442
 LINEAGE_FUZZER_CONTEXT_FILE=/var/lib/datahub-hackathon/lineage-fuzzer/campaign-context.json
 LINEAGE_FUZZER_ALLOWED_DATABASE_PATHS=demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb
 LINEAGE_FUZZER_ALLOWED_ENVIRONMENTS=DEV
@@ -149,7 +151,11 @@ Do not silently fall back to local context. A saved file is accepted only with i
 receipt, promoted 40-character candidate SHA, seeded catalog-state digest, catalog-plan digest,
 current fixture checksums, exact MCP tool schemas, and complete DataHub observations.
 
-1. Promote exact candidate `472d4d850c9b6e34529eddb0507a4e015987d33f`. Keep
+For the current completed-mutation/failed-verification state, follow the dedicated recovery steps
+below before this normal seed/capture flow. Do not seed first; reseeding would replace the exact
+tombstone state that the recovery receipt must verify.
+
+1. Promote exact candidate `92db02471a6bdb517be2db934a146b71509fe442`. Keep
    `LINEAGE_FUZZER_INJECTION_ENABLED=false` and do not expose the public run yet.
 2. Install/build, then seed the mounted disposable DuckDB fixture:
 
@@ -205,8 +211,10 @@ current fixture checksums, exact MCP tool schemas, and complete DataHub observat
     Never search-delete or globally reset DataHub. Roll the app image/config back to the prior
     coordinator-approved version and preserve all failed receipts for diagnosis.
 
-The complete expanded seed is coordinator-verified live on the preceding candidate. No successful
-live context capture, judge campaign, reset, or new foreign-isolation evidence is claimed here.
+The complete expanded seed, live context capture, and judge campaign are coordinator-reported
+successful on deployed `472d4d850c9b6e34529eddb0507a4e015987d33f`. The reset mutations and
+sibling isolation are also coordinator-observed, but no successful completed reset receipt is
+claimed yet; the recovery below remains coordinator-owned.
 
 ## Coordinator live capture finding and correction
 
@@ -338,6 +346,78 @@ compatibility correction:
 - Pinned regressions reproduce the exact one-facet short empty envelope and reject short-form
   nonzero, extra-key, mixed, and full-empty variants.
 
+## Coordinator live reset finding and correction
+
+After the coordinator-reported successful live campaign on exact deployed product
+`472d4d850c9b6e34529eddb0507a4e015987d33f`:
+
+- The exact reset approval was
+  `46f7a883f8583790b7bce44410cd8bad68c9acfd45700ae60e20bb2d5352b7d6`.
+- Reset wrote sanitized `started` and `failed` receipts. The failed receipt recorded only
+  `error_type=DataHubGraphQLError`.
+- Context and its receipt were correctly invalidated before mutation; public readiness is
+  truthfully 503.
+- Read-only inspection of current `status` aspects in `metadata_aspect_v2` confirmed
+  `removed=true` for exactly all nine allowlisted fixtures: the three
+  `urn:li:assertion:fuzzer.control.*` assertions and all six allocated DuckDB `fuzzer.*`
+  datasets.
+- This proves all nine reset mutations completed. Candidate `472d4d8` then called
+  `assertions_for_dataset` for already-tombstoned datasets during `_verify_reset`; the resulting
+  GraphQL error prevented an honest completed receipt.
+- Sibling portfolio state remained byte-identical with SHA-256
+  `873849f2a097ad5a799275d578339392ed64bc17b3315eac7bfdf746e4af8a53`.
+- No successful reset completion receipt is claimed from that attempt.
+
+Candidate `92db02471a6bdb517be2db934a146b71509fe442` makes only the reset verification
+and recovery correction:
+
+- Reset preflights direct OpenAPI `status` aspects for the exact three assertion and six dataset
+  URNs. Read errors propagate and fail closed.
+- Tombstones already observed as `removed=true` are reused without another mutation. Only missing
+  exact tombstones are written.
+- A separate strict postcondition read positively verifies `removed=true` for all nine exact URNs
+  before catalog state becomes `reset` and a completed receipt is written.
+- Assertion verification no longer traverses GraphQL through deleted datasets. GraphQL errors are
+  neither caught nor interpreted as success.
+- The completed receipt separately lists already-present assertion/dataset tombstones and
+  assertion/dataset tombstones written by that invocation.
+- Context invalidation, immutable approval, exact namespace, retained Domain/Tags/proof assertion,
+  sanitized failed receipts, and foreign-project isolation guards are unchanged.
+- Regressions reproduce a `DataHubGraphQLError` only after all datasets are tombstoned, prove a
+  zero-write idempotent recovery, and fail closed when an assertion tombstone is not visible.
+
+### Recovery for the current completed-mutation/failed-verification state
+
+1. Copy the existing `started` and `failed` receipts plus sibling-isolation evidence into the
+   coordinator evidence directory before retry. A retry writes a new `started` receipt at the
+   plan-bound receipt path; the copied files preserve the original attempt immutably.
+2. Promote exact candidate `92db02471a6bdb517be2db934a146b71509fe442` with injection disabled.
+   Do not recreate context; readiness should remain 503.
+3. Confirm the immutable plan still reports the exact reset approval above:
+
+   ```powershell
+   lineage-fuzzer show-datahub-plans
+   ```
+
+4. Run the same exact approved reset once:
+
+   ```powershell
+   lineage-fuzzer reset-datahub-fixture `
+     --approval-sha256 46f7a883f8583790b7bce44410cd8bad68c9acfd45700ae60e20bb2d5352b7d6
+   ```
+
+5. Require `status=soft_deleted_and_verified`, all three assertion URNs in
+   `assertion_urns_already_tombstoned`, all six dataset URNs in
+   `dataset_urns_already_tombstoned`, and both `*_tombstones_written` lists empty. These fields
+   prove the recovery reused the nine coordinator-confirmed tombstones rather than rewriting them.
+6. Require a new `completed` receipt and catalog state `status=reset`. Retain the prior failed
+   receipt as the historical failed-verification record. Readiness must remain 503.
+7. Recompare sibling portfolio state byte-for-byte and against SHA-256
+   `873849f2a097ad5a799275d578339392ed64bc17b3315eac7bfdf746e4af8a53`.
+8. Only if the coordinator wants to restore the public demo afterward, run the unchanged approved
+   seed, capture a fresh candidate-bound live context, restart with the context path and safe
+   injection flag, and recheck readiness. No reseed or recapture is claimed here.
+
 ## Readiness and judge UI contract
 
 In `APP_ENV=hackathon`, readiness and the public plan require:
@@ -393,7 +473,7 @@ Working-tree checks:
 git diff --check
 ```
 
-Results: 120 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
+Results: 122 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
 The test suite covers exact seed payloads, pinned SDK deserialization, idempotent reset/reseed,
 partial reset failure receipts, tombstones, foreign namespaces, full pinned MCP/GraphQL response
 shapes, forged/incomplete snapshots, DataHub-derived controls, immutable evidence, public
@@ -403,19 +483,19 @@ Exact-archive command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\verify_archive.ps1 `
-  -Commit 472d4d850c9b6e34529eddb0507a4e015987d33f
+  -Commit 92db02471a6bdb517be2db934a146b71509fe442
 ```
 
 Result:
 
 ```text
-verified_archive commit=472d4d850c9b6e34529eddb0507a4e015987d33f
+verified_archive commit=92db02471a6bdb517be2db934a146b71509fe442
 wheel=lineage_fuzzer-0.1.0-py3-none-any.whl
 ```
 
 The verifier extracted `git archive` into a disposable directory, scanned all 81 archived files,
 created a fresh environment, installed `.[dev,datahub]`, built and force-reinstalled the wheel,
-imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 120 tests and Ruff, seeded the fixture,
+imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 122 tests and Ruff, seeded the fixture,
 ran baseline controls, and exercised the judge root/plan through `TestClient`.
 
 ## Preserved live assertion proof
@@ -465,7 +545,7 @@ new explicit proof.
   campaign-heavy and should remain single-flight.
 - DuckDB, snapshots, context receipts, catalog receipts, and campaign evidence belong only under
   the allocated state/fixture roots and remain outside Git.
-- The expanded catalog seed, schema compatibility, nonempty nested lineage envelope, and short
-  empty lineage envelope are coordinator-observed live. The exact two-variant direction contract
-  is locally and archive-verified; promotion retry, live capture, judge run, reset, and new
-  isolation evidence remain coordinator-owned.
+- The expanded catalog seed, schema compatibility, both lineage-envelope variants, live capture,
+  and judge campaign are coordinator-observed. All nine reset tombstones and the unchanged sibling
+  hash are also coordinator-observed. Exact zero-write recovery and the completed reset receipt
+  remain coordinator-owned; the correction is locally and archive-verified.
