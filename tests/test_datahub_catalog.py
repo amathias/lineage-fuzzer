@@ -23,6 +23,7 @@ from lineage_fuzzer.datahub.fixture_contract import (
     PROJECT_TAG_URN,
     SANDBOX_TAG_URN,
 )
+from lineage_fuzzer.datahub.graphql import DataHubGraphQLError
 from lineage_fuzzer.datahub.receipts import sha256_json
 
 
@@ -55,6 +56,9 @@ class FakeDataHub:
         self.operations: list[dict[str, Any]] = []
         self.fail_on_soft_delete: int | None = None
         self.soft_delete_calls = 0
+        self.fail_assertion_reads_after_dataset_tombstones = False
+        self.assertion_tombstone_visible = True
+        self.assertion_read_calls = 0
 
     async def upsert_aspect(
         self,
@@ -119,13 +123,16 @@ class FakeDataHub:
                 }
             }
         )
-        if entity_type == "dataset":
-            entity = self.entities.setdefault(entity_urn, {"urn": entity_urn})
-            entity["status"] = {"value": {"removed": removed}}
-        elif removed:
-            self.active_assertions.discard(entity_urn)
+        entity = self.entities.setdefault(entity_urn, {"urn": entity_urn})
+        if entity_type == "assertion" and removed and not self.assertion_tombstone_visible:
+            entity["status"] = {"value": {"removed": False}}
         else:
-            self.active_assertions.add(entity_urn)
+            entity["status"] = {"value": {"removed": removed}}
+        if entity_type == "assertion":
+            if removed:
+                self.active_assertions.discard(entity_urn)
+            else:
+                self.active_assertions.add(entity_urn)
         return {"urn": entity_urn}
 
     async def upsert_custom_assertion(
@@ -165,6 +172,18 @@ class FakeDataHub:
         return {"urn": assertion_urn}
 
     async def assertions_for_dataset(self, dataset_urn: str) -> dict[str, Any]:
+        self.assertion_read_calls += 1
+        if self.fail_assertion_reads_after_dataset_tombstones and all(
+            self.entities.get(urn, {})
+            .get("status", {})
+            .get("value", {})
+            .get("removed")
+            is True
+            for urn in ALL_DATASET_URNS
+        ):
+            raise DataHubGraphQLError(
+                "synthetic GraphQL failure for a soft-deleted dataset"
+            )
         assertions = [
             value
             for urn, value in sorted(self.assertions.items())
@@ -328,6 +347,74 @@ async def test_reset_is_exact_idempotent_and_preserves_domain_tags_and_proof(
     assert SANDBOX_TAG_URN in datahub.entities
     assert Path(second["started_receipt_path"]).is_file()
     assert Path(second["completed_receipt_path"]).is_file()
+
+
+@pytest.mark.asyncio
+async def test_reset_verifies_tombstones_without_querying_deleted_datasets(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    datahub = FakeDataHub()
+    service = CatalogFixtureService(
+        settings,
+        datahub,
+        datahub,
+        workspace_root=tmp_path,
+    )
+    await service.seed(approval_sha256=sha256_json(catalog_plan(settings)))
+    assertion_reads_after_seed = datahub.assertion_read_calls
+    datahub.fail_assertion_reads_after_dataset_tombstones = True
+    approval = sha256_json(catalog_reset_plan(settings))
+
+    first = await service.reset(approval_sha256=approval)
+    soft_delete_calls_after_first = datahub.soft_delete_calls
+    second = await service.reset(approval_sha256=approval)
+
+    assert first["status"] == second["status"] == "soft_deleted_and_verified"
+    assert datahub.assertion_read_calls == assertion_reads_after_seed
+    assert datahub.soft_delete_calls == soft_delete_calls_after_first
+    assert set(first["assertion_tombstones_written"]) == BASELINE_ASSERTION_URNS
+    assert set(first["dataset_tombstones_written"]) == set(ALL_DATASET_URNS)
+    assert set(second["assertion_urns_already_tombstoned"]) == (
+        BASELINE_ASSERTION_URNS
+    )
+    assert set(second["dataset_urns_already_tombstoned"]) == set(ALL_DATASET_URNS)
+    assert second["assertion_tombstones_written"] == []
+    assert second["dataset_tombstones_written"] == []
+    assert all(
+        datahub.entities[urn]["status"]["value"]["removed"] is True
+        for urn in BASELINE_ASSERTION_URNS | set(ALL_DATASET_URNS)
+    )
+
+
+@pytest.mark.asyncio
+async def test_reset_fails_closed_when_assertion_tombstone_is_not_visible(
+    tmp_path: Path,
+) -> None:
+    settings = _settings(tmp_path)
+    datahub = FakeDataHub()
+    service = CatalogFixtureService(
+        settings,
+        datahub,
+        datahub,
+        workspace_root=tmp_path,
+    )
+    await service.seed(approval_sha256=sha256_json(catalog_plan(settings)))
+    datahub.assertion_tombstone_visible = False
+
+    with pytest.raises(AllocationViolation, match="assertion tombstone"):
+        await service.reset(
+            approval_sha256=sha256_json(catalog_reset_plan(settings))
+        )
+
+    state = json.loads(catalog_state_path(settings, tmp_path).read_text(encoding="utf-8"))
+    assert state["status"] == "reset_failed"
+    failed_receipts = list(
+        (settings.state_dir / "datahub-receipts").rglob("failed.json")
+    )
+    assert len(failed_receipts) == 1
+    payload = json.loads(failed_receipts[0].read_text(encoding="utf-8"))
+    assert payload["payload"]["error_type"] == "AllocationViolation"
 
 
 @pytest.mark.asyncio

@@ -186,19 +186,33 @@ class CatalogFixtureService:
             "assertion_urns": sorted(BASELINE_ASSERTION_URNS),
         }
         started_path = store.write("started", plan_sha256=plan_sha, payload=started)
+        existing_assertion_tombstones: set[str] = set()
+        existing_dataset_tombstones: set[str] = set()
+        written_assertion_tombstones: set[str] = set()
+        written_dataset_tombstones: set[str] = set()
         try:
+            (
+                existing_assertion_tombstones,
+                existing_dataset_tombstones,
+            ) = await self._observed_reset_tombstones()
             for assertion_urn in sorted(BASELINE_ASSERTION_URNS):
+                if assertion_urn in existing_assertion_tombstones:
+                    continue
                 await self.client.set_soft_deleted(
                     entity_type="assertion",
                     entity_urn=assertion_urn,
                     removed=True,
                 )
+                written_assertion_tombstones.add(assertion_urn)
             for dataset_urn in ALL_DATASET_URNS:
+                if dataset_urn in existing_dataset_tombstones:
+                    continue
                 await self.client.set_soft_deleted(
                     entity_type="dataset",
                     entity_urn=dataset_urn,
                     removed=True,
                 )
+                written_dataset_tombstones.add(dataset_urn)
             await self._verify_reset()
         except Exception as exc:
             failed = {
@@ -227,6 +241,12 @@ class CatalogFixtureService:
             "status": "soft_deleted_and_verified",
             "catalog_state_sha256": sha256_json(state),
             "retained_urns": [DOMAIN_URN, PROJECT_TAG_URN, SANDBOX_TAG_URN],
+            "assertion_urns_already_tombstoned": sorted(
+                existing_assertion_tombstones
+            ),
+            "dataset_urns_already_tombstoned": sorted(existing_dataset_tombstones),
+            "assertion_tombstones_written": sorted(written_assertion_tombstones),
+            "dataset_tombstones_written": sorted(written_dataset_tombstones),
         }
         completed_path = store.write(
             "completed",
@@ -268,6 +288,13 @@ class CatalogFixtureService:
         )
 
     async def _verify_reset(self) -> None:
+        for assertion_urn in sorted(BASELINE_ASSERTION_URNS):
+            observed = await self.client.get_entity(
+                entity_type="assertion",
+                entity_urn=assertion_urn,
+                aspect_names=("status",),
+            )
+            validate_observed_assertion_tombstone(observed, assertion_urn)
         for table_name, dataset_urn in TABLE_URNS.items():
             observed = await self.client.get_entity(
                 entity_type="dataset",
@@ -282,7 +309,27 @@ class CatalogFixtureService:
                 removed=True,
                 status_only=True,
             )
-        await self._wait_for_assertions({})
+
+    async def _observed_reset_tombstones(self) -> tuple[set[str], set[str]]:
+        assertions: set[str] = set()
+        datasets: set[str] = set()
+        for assertion_urn in sorted(BASELINE_ASSERTION_URNS):
+            observed = await self.client.get_entity(
+                entity_type="assertion",
+                entity_urn=assertion_urn,
+                aspect_names=("status",),
+            )
+            if _has_tombstone(observed, assertion_urn):
+                assertions.add(assertion_urn)
+        for dataset_urn in ALL_DATASET_URNS:
+            observed = await self.client.get_entity(
+                entity_type="dataset",
+                entity_urn=dataset_urn,
+                aspect_names=("status",),
+            )
+            if _has_tombstone(observed, dataset_urn):
+                datasets.add(dataset_urn)
+        return assertions, datasets
 
     async def _all_assertions(self) -> dict[str, dict[str, str]]:
         observed: dict[str, dict[str, str]] = {}
@@ -508,6 +555,26 @@ def validate_observed_dataset(
     }
     if upstreams != set(upstreams_for(dataset_urn)):
         raise AllocationViolation("DataHub upstream lineage differs from the fixture contract")
+
+
+def validate_observed_assertion_tombstone(
+    observed: Any,
+    assertion_urn: str,
+) -> None:
+    entity = _find_entity(observed, assertion_urn)
+    if entity is None:
+        raise AllocationViolation("DataHub did not return an allocated assertion")
+    status = _aspect_value(entity, "status")
+    if not isinstance(status, dict) or status.get("removed") is not True:
+        raise AllocationViolation("DataHub assertion tombstone status differs")
+
+
+def _has_tombstone(observed: Any, entity_urn: str) -> bool:
+    entity = _find_entity(observed, entity_urn)
+    if entity is None:
+        return False
+    status = _aspect_value(entity, "status")
+    return isinstance(status, dict) and status.get("removed") is True
 
 
 def _canonical_operations(settings: Settings) -> list[dict[str, Any]]:
