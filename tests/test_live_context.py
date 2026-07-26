@@ -57,6 +57,25 @@ def test_capture_uses_complete_pinned_mcp_and_graphql_shapes(tmp_path: Path) -> 
     assert len(assertions.calls) == 6
 
 
+def test_capture_accepts_observed_alphabetical_schema_order_and_canonicalizes(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    prepare_bound_runtime(tmp_path, settings)
+
+    context = _capture(tmp_path, settings)
+
+    raw_customers = next(
+        entity for entity in context.entities if entity["name"] == "fuzzer.raw.customers"
+    )
+    assert raw_customers["schemaFields"] == [
+        "customer_id",
+        "customer_name",
+        "segment",
+        "country_code",
+    ]
+
+
 def test_live_context_store_round_trips_with_bound_receipt(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     prepare_bound_runtime(tmp_path, settings)
@@ -89,6 +108,8 @@ def test_relabeling_local_snapshot_cannot_create_live_evidence(tmp_path: Path) -
     (
         PinnedMCP(incomplete_lineage=True),
         PinnedMCP(missing_schema_field=True),
+        PinnedMCP(duplicate_schema_field=True),
+        PinnedMCP(extra_schema_field=True),
         PinnedMCP(missing_marker=True),
         PinnedMCP(foreign_lineage=True),
     ),

@@ -135,7 +135,8 @@ class LiveDataHubContextReader:
             )
             raw_digests[f"mcp.schema:{urn}"] = sha256_json(schema_response)
             fields = _schema_field_paths(schema_response)
-            if fields != expected_schema_fields(urn):
+            expected_fields = expected_schema_fields(urn)
+            if len(fields) != len(set(fields)) or set(fields) != set(expected_fields):
                 raise ContextCaptureError(
                     f"DataHub schema is incomplete or contradictory for {urn}"
                 )
@@ -171,7 +172,7 @@ class LiveDataHubContextReader:
                     f"DataHub baseline assertions are incomplete or contradictory for {urn}"
                 )
             assertions.extend(dataset_assertions)
-            entities.append(_normalized_entity(table_name, urn, fields))
+            entities.append(_normalized_entity(table_name, urn, expected_fields))
 
         context = DataHubContextSnapshot(
             source="datahub-mcp-live",
@@ -496,7 +497,7 @@ def _schema_field_paths(value: Any) -> tuple[str, ...]:
     elif isinstance(value, list):
         for child in value:
             fields.extend(_schema_field_paths(child))
-    return tuple(dict.fromkeys(fields))
+    return tuple(fields)
 
 
 def _direct_lineage_urns(value: Any, *, source_urn: str) -> tuple[str, ...]:

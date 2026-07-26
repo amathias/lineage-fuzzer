@@ -138,11 +138,15 @@ class PinnedMCP:
         *,
         incomplete_lineage: bool = False,
         missing_schema_field: bool = False,
+        duplicate_schema_field: bool = False,
+        extra_schema_field: bool = False,
         missing_marker: bool = False,
         foreign_lineage: bool = False,
     ) -> None:
         self.incomplete_lineage = incomplete_lineage
         self.missing_schema_field = missing_schema_field
+        self.duplicate_schema_field = duplicate_schema_field
+        self.extra_schema_field = extra_schema_field
         self.missing_marker = missing_marker
         self.foreign_lineage = foreign_lineage
         self.calls: list[tuple[str, dict[str, Any]]] = []
@@ -178,8 +182,20 @@ class PinnedMCP:
                 }
                 for field_name, native_type, nullable in TABLE_SCHEMAS[table_name]
             ]
+            if urn == TABLE_URNS["raw.customers"]:
+                fields.sort(key=lambda field: field["fieldPath"])
             if self.missing_schema_field and urn == TABLE_URNS["raw.orders"]:
                 fields = fields[:-1]
+            if self.duplicate_schema_field and urn == TABLE_URNS["raw.customers"]:
+                fields.append(dict(fields[0]))
+            if self.extra_schema_field and urn == TABLE_URNS["raw.customers"]:
+                fields.append(
+                    {
+                        "fieldPath": "unexpected_field",
+                        "nativeDataType": "VARCHAR",
+                        "nullable": True,
+                    }
+                )
             return {
                 "urn": urn,
                 "total": len(fields),
