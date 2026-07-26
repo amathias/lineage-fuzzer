@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `Ready for coordinator promotion and exact reset-receipt recovery` |
+| Status | `Live reset/reseed/capture recovery complete; product candidate unchanged` |
 | Product candidate | `92db02471a6bdb517be2db934a146b71509fe442` |
 | Branch | `main` |
 | Canonical origin | `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git` |
@@ -14,7 +14,7 @@
 | Secret scan | `secret_scan=clean tracked_files=81` |
 | Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 122 tests, Ruff, fixture/controls commands, and judge UI smoke |
 | Local campaign | `status=proved_and_restored`, baseline `1/3 (33.3%)`, improved `3/3 (100.0%)`, restoration true |
-| Live status | Coordinator reports the complete live campaign succeeded on deployed `472d4d8`. Its exact reset then completed all nine allowlisted tombstone writes but failed only during post-mutation GraphQL verification. Context is invalidated and readiness is truthfully 503. The earlier assertion proof remains preserved. |
+| Live status | Deployed `92db024` completed zero-write reset recovery, then the unchanged approved seed and live capture succeeded after the coordinator restored the shared OpenSearch backend. Readiness and plan are 200, context source is `datahub-mcp-live`, run is enabled, and injection is true. |
 | AWS/deployment activity | None from this project task |
 
 This project chat owns Lineage Fuzzer product code and evidence contracts. The portfolio coordinator
@@ -151,9 +151,8 @@ Do not silently fall back to local context. A saved file is accepted only with i
 receipt, promoted 40-character candidate SHA, seeded catalog-state digest, catalog-plan digest,
 current fixture checksums, exact MCP tool schemas, and complete DataHub observations.
 
-For the current completed-mutation/failed-verification state, follow the dedicated recovery steps
-below before this normal seed/capture flow. Do not seed first; reseeding would replace the exact
-tombstone state that the recovery receipt must verify.
+The coordinator has completed the reset/reseed/capture recovery described below. This remains the
+normal clean promotion/run order for a future deployment or replay.
 
 1. Promote exact candidate `92db02471a6bdb517be2db934a146b71509fe442`. Keep
    `LINEAGE_FUZZER_INJECTION_ENABLED=false` and do not expose the public run yet.
@@ -212,9 +211,8 @@ tombstone state that the recovery receipt must verify.
     coordinator-approved version and preserve all failed receipts for diagnosis.
 
 The complete expanded seed, live context capture, and judge campaign are coordinator-reported
-successful on deployed `472d4d850c9b6e34529eddb0507a4e015987d33f`. The reset mutations and
-sibling isolation are also coordinator-observed, but no successful completed reset receipt is
-claimed yet; the recovery below remains coordinator-owned.
+successful. Exact zero-write reset recovery and the subsequent unchanged seed/capture restore are
+also complete on deployed `92db02471a6bdb517be2db934a146b71509fe442`.
 
 ## Coordinator live capture finding and correction
 
@@ -386,37 +384,48 @@ and recovery correction:
 - Regressions reproduce a `DataHubGraphQLError` only after all datasets are tombstoned, prove a
   zero-write idempotent recovery, and fail closed when an assertion tombstone is not visible.
 
-### Recovery for the current completed-mutation/failed-verification state
+### Completed zero-write reset recovery and restored live state
 
-1. Copy the existing `started` and `failed` receipts plus sibling-isolation evidence into the
-   coordinator evidence directory before retry. A retry writes a new `started` receipt at the
-   plan-bound receipt path; the copied files preserve the original attempt immutably.
-2. Promote exact candidate `92db02471a6bdb517be2db934a146b71509fe442` with injection disabled.
-   Do not recreate context; readiness should remain 503.
-3. Confirm the immutable plan still reports the exact reset approval above:
+The coordinator promoted exact `92db02471a6bdb517be2db934a146b71509fe442` and ran the same
+approval-bound reset against the nine already-tombstoned entities:
 
-   ```powershell
-   lineage-fuzzer show-datahub-plans
-   ```
+- Reset exited 0 with `status=soft_deleted_and_verified`.
+- All three assertion URNs were listed in `assertion_urns_already_tombstoned`.
+- All six dataset URNs were listed in `dataset_urns_already_tombstoned`.
+- Both `assertion_tombstones_written` and `dataset_tombstones_written` were empty.
+- A completed receipt was written. Its coordinator-reported payload SHA-256 prefix is
+  `155a7111...`.
+- Readiness remained 503 and injection remained false, as required while context was invalidated.
 
-4. Run the same exact approved reset once:
+The coordinator then followed the documented restore with the unchanged exact seed approval
+`a4725dd0b241b5dc0dc4da4e9f220c7bca8b349731c3fa255864b4f21ac9f9df`:
 
-   ```powershell
-   lineage-fuzzer reset-datahub-fixture `
-     --approval-sha256 46f7a883f8583790b7bce44410cd8bad68c9acfd45700ae60e20bb2d5352b7d6
-   ```
+- Both the initial seed and one evidence-preserving idempotent retry reactivated all nine exact
+  statuses to `removed=false`, then failed closed with `DataHubGraphQLError`.
+- Catalog state remained `seed_failed`; readiness remained 503; injection remained false; no
+  context capture was attempted.
+- The repeated failures were not a Lineage Fuzzer defect. Shared `datahub-opensearch-1` had exited
+  at 17:15:28 with exit 127 after `OutOfMemoryError: unable to create native thread` and a fatal
+  refresh-thread failure; its restart policy was `no`.
+- The same missing shared search backend caused contemporaneous `Root cause: search` failures in
+  sibling projects. No project product change was warranted.
 
-5. Require `status=soft_deleted_and_verified`, all three assertion URNs in
-   `assertion_urns_already_tombstoned`, all six dataset URNs in
-   `dataset_urns_already_tombstoned`, and both `*_tombstones_written` lists empty. These fields
-   prove the recovery reused the nine coordinator-confirmed tombstones rather than rewriting them.
-6. Require a new `completed` receipt and catalog state `status=reset`. Retain the prior failed
-   receipt as the historical failed-verification record. Readiness must remain 503.
-7. Recompare sibling portfolio state byte-for-byte and against SHA-256
-   `873849f2a097ad5a799275d578339392ed64bc17b3315eac7bfdf746e4af8a53`.
-8. Only if the coordinator wants to restore the public demo afterward, run the unchanged approved
-   seed, capture a fresh candidate-bound live context, restart with the context path and safe
-   injection flag, and recheck readiness. No reseed or recapture is claimed here.
+After the coordinator restored and hardened OpenSearch, the unchanged deployed `92db024` path
+succeeded:
+
+- The unchanged approved seed exited 0 with `status=verified`.
+- Live context capture exited 0 with 6 entities, 5 edges, and 3 assertion payloads.
+- The coordinator-reported context SHA-256 prefix is `68e5b038...`.
+- The sibling query remained byte-identical; its coordinator-reported SHA-256 prefix is
+  `4bc98104...`.
+- Injection was restored to true.
+- `GET /api/readiness` returned 200.
+- `GET /api/demo/plan` returned 200 with `context_source=datahub-mcp-live` and
+  `run_enabled=true`.
+- The coordinator-reported live plan approval SHA-256 prefix is `1a9f004f...`.
+
+The direct seed-verification experiment created while OpenSearch was unavailable was discarded and
+never pushed. Product candidate `92db02471a6bdb517be2db934a146b71509fe442` remains authoritative.
 
 ## Readiness and judge UI contract
 
@@ -546,6 +555,8 @@ new explicit proof.
 - DuckDB, snapshots, context receipts, catalog receipts, and campaign evidence belong only under
   the allocated state/fixture roots and remain outside Git.
 - The expanded catalog seed, schema compatibility, both lineage-envelope variants, live capture,
-  and judge campaign are coordinator-observed. All nine reset tombstones and the unchanged sibling
-  hash are also coordinator-observed. Exact zero-write recovery and the completed reset receipt
-  remain coordinator-owned; the correction is locally and archive-verified.
+  judge campaign, exact zero-write reset recovery, completed reset receipt, unchanged reseed,
+  recapture, and sibling isolation are coordinator-observed on the authoritative product.
+- Shared DataHub search availability is an infrastructure prerequisite for GraphQL assertion
+  discovery, MCP entity search, and lineage PIT queries. A shared search outage must not be
+  misclassified as a project-owned verification defect.
