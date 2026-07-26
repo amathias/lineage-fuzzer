@@ -501,27 +501,42 @@ def _schema_field_paths(value: Any) -> tuple[str, ...]:
 
 
 def _direct_lineage_urns(value: Any, *, source_urn: str) -> tuple[str, ...]:
-    discovered: dict[str, int] = {}
+    if not isinstance(value, dict) or not isinstance(value.get("searchResults"), list):
+        raise ContextCaptureError("one-hop lineage response has an invalid result envelope")
 
-    def visit(node: Any, inherited_degree: int | None = None) -> None:
-        if isinstance(node, dict):
-            degree = node.get("degree", inherited_degree)
-            entity = node.get("entity")
-            if isinstance(entity, dict) and isinstance(entity.get("urn"), str):
-                urn = entity["urn"]
-                if urn != source_urn:
-                    if degree != 1:
-                        raise ContextCaptureError(
-                            "one-hop lineage response contains a non-direct result"
-                        )
-                    discovered[urn] = degree
-            for child in node.values():
-                visit(child, degree if isinstance(degree, int) else inherited_degree)
-        elif isinstance(node, list):
-            for child in node:
-                visit(child, inherited_degree)
+    discovered: set[str] = set()
+    for result in value["searchResults"]:
+        if not isinstance(result, dict) or not isinstance(result.get("entity"), dict):
+            raise ContextCaptureError("one-hop lineage response has an invalid dataset result")
+        entity = result["entity"]
+        urn = entity.get("urn")
+        entity_type = entity.get("type")
+        if (
+            not isinstance(urn, str)
+            or not urn.startswith("urn:li:dataset:")
+            or not isinstance(entity_type, str)
+            or entity_type.casefold() != "dataset"
+        ):
+            raise ContextCaptureError("one-hop lineage response has an invalid dataset result")
+        degree = result.get("degree")
+        if (
+            isinstance(degree, bool)
+            or not isinstance(degree, (int, float))
+            or degree != 1
+        ):
+            raise ContextCaptureError(
+                "one-hop lineage response contains a non-direct result"
+            )
+        if urn == source_urn:
+            raise ContextCaptureError(
+                "one-hop lineage response contains its source as a downstream result"
+            )
+        if urn in discovered:
+            raise ContextCaptureError(
+                "one-hop lineage response contains a duplicate dataset result"
+            )
+        discovered.add(urn)
 
-    visit(value)
     return tuple(sorted(discovered))
 
 

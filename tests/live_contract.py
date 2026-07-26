@@ -142,6 +142,10 @@ class PinnedMCP:
         extra_schema_field: bool = False,
         missing_marker: bool = False,
         foreign_lineage: bool = False,
+        missing_lineage_degree: bool = False,
+        non_direct_lineage: bool = False,
+        duplicate_lineage: bool = False,
+        invalid_lineage_type: bool = False,
     ) -> None:
         self.incomplete_lineage = incomplete_lineage
         self.missing_schema_field = missing_schema_field
@@ -149,6 +153,10 @@ class PinnedMCP:
         self.extra_schema_field = extra_schema_field
         self.missing_marker = missing_marker
         self.foreign_lineage = foreign_lineage
+        self.missing_lineage_degree = missing_lineage_degree
+        self.non_direct_lineage = non_direct_lineage
+        self.duplicate_lineage = duplicate_lineage
+        self.invalid_lineage_type = invalid_lineage_type
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     async def describe_tools(self) -> tuple[dict[str, Any], ...]:
@@ -209,16 +217,60 @@ class PinnedMCP:
                 downstreams.append(
                     "urn:li:dataset:(urn:li:dataPlatform:duckdb,foreign.orders,DEV)"
                 )
-            return {
-                "searchResults": [
-                    {
-                        "entity": {"urn": downstream, "type": "DATASET"},
-                        "degree": 1,
-                    }
-                    for downstream in downstreams
-                ],
+            results = [
+                {
+                    "entity": {"urn": downstream, "type": "DATASET"},
+                    "degree": 1,
+                }
+                for downstream in downstreams
+            ]
+            if results and urn == TABLE_URNS["raw.orders"]:
+                if self.missing_lineage_degree:
+                    results[0].pop("degree")
+                if self.non_direct_lineage:
+                    results[0]["degree"] = 2
+                if self.duplicate_lineage:
+                    results.append(
+                        {
+                            "entity": dict(results[0]["entity"]),
+                            "degree": results[0].get("degree", 1),
+                        }
+                    )
+                if self.invalid_lineage_type:
+                    results[0]["entity"]["type"] = "CHART"
+            response = {
+                "searchResults": results,
                 "count": len(downstreams),
             }
+            if urn in {
+                TABLE_URNS["raw.customers"],
+                TABLE_URNS["raw.orders"],
+                TABLE_URNS["staging.orders_enriched"],
+                TABLE_URNS["marts.customer_value"],
+            }:
+                response["source"] = {
+                    "entity": {
+                        "urn": urn,
+                        "type": "DATASET",
+                        "owner": {
+                            "entity": {"urn": OWNER_URN, "type": "CORP_USER"}
+                        },
+                        "platform": {
+                            "entity": {
+                                "urn": "urn:li:dataPlatform:duckdb",
+                                "type": "DATA_PLATFORM",
+                            }
+                        },
+                        "domain": {
+                            "entity": {"urn": DOMAIN_URN, "type": "DOMAIN"}
+                        },
+                        "tags": [
+                            {"entity": {"urn": PROJECT_TAG_URN, "type": "TAG"}},
+                            {"entity": {"urn": SANDBOX_TAG_URN, "type": "TAG"}},
+                        ],
+                    }
+                }
+            return response
         raise AssertionError(name)
 
 

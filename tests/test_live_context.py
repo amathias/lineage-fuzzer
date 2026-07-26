@@ -16,6 +16,7 @@ from lineage_fuzzer.campaign.context import (
     save_live_context_snapshot,
 )
 from lineage_fuzzer.config import Settings
+from lineage_fuzzer.datahub.fixture_contract import DEMO_LINEAGE
 from lineage_fuzzer.demo_cli import main
 from tests.live_contract import (
     CANDIDATE_SHA,
@@ -76,6 +77,17 @@ def test_capture_accepts_observed_alphabetical_schema_order_and_canonicalizes(
     ]
 
 
+def test_capture_ignores_governance_entities_outside_lineage_results(
+    tmp_path: Path,
+) -> None:
+    settings = make_settings(tmp_path)
+    prepare_bound_runtime(tmp_path, settings)
+
+    context = _capture(tmp_path, settings)
+
+    assert context.lineage == DEMO_LINEAGE
+
+
 def test_live_context_store_round_trips_with_bound_receipt(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     prepare_bound_runtime(tmp_path, settings)
@@ -112,6 +124,10 @@ def test_relabeling_local_snapshot_cannot_create_live_evidence(tmp_path: Path) -
         PinnedMCP(extra_schema_field=True),
         PinnedMCP(missing_marker=True),
         PinnedMCP(foreign_lineage=True),
+        PinnedMCP(missing_lineage_degree=True),
+        PinnedMCP(non_direct_lineage=True),
+        PinnedMCP(duplicate_lineage=True),
+        PinnedMCP(invalid_lineage_type=True),
     ),
 )
 def test_capture_rejects_incomplete_or_foreign_catalog_shapes(
