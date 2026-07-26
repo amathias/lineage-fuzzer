@@ -5,16 +5,16 @@
 | Field | Value |
 |---|---|
 | Status | `Ready for coordinator promotion retry and guarded live capture` |
-| Product candidate | `3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a` |
+| Product candidate | `472d4d850c9b6e34529eddb0507a4e015987d33f` |
 | Branch | `main` |
 | Canonical origin | `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git` |
 | Milestone | Complete six-dataset/five-edge DataHub contract, strict live context, three-fault campaign, immutable evidence, generated SQL, restoration, and judge UI |
-| Local tests | `116 passed` |
+| Local tests | `120 passed` |
 | Lint | `python -m ruff check src tests scripts` passed |
 | Secret scan | `secret_scan=clean tracked_files=81` |
-| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 116 tests, Ruff, fixture/controls commands, and judge UI smoke |
+| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 120 tests, Ruff, fixture/controls commands, and judge UI smoke |
 | Local campaign | `status=proved_and_restored`, baseline `1/3 (33.3%)`, improved `3/3 (100.0%)`, restoration true |
-| Live status | Coordinator repeatedly verified the approved 6-dataset/5-edge/3-assertion seed and real schema ordering. Deployed `3633f21` then rejected the real nested `downstreams.searchResults` envelope. No live context or judge campaign was claimed. The earlier assertion proof remains preserved. |
+| Live status | Coordinator repeatedly verified the approved 6-dataset/5-edge/3-assertion seed, schema ordering, and nonempty nested lineage. Deployed `3a25d79` then rejected the real exact two-key empty-downstreams variant. No live context or judge campaign was claimed. The earlier assertion proof remains preserved. |
 | AWS/deployment activity | None from this project task |
 
 This project chat owns Lineage Fuzzer product code and evidence contracts. The portfolio coordinator
@@ -129,7 +129,7 @@ DATAHUB_PROJECT_TAG=project-lineage-fuzzer
 DATAHUB_URN_PREFIX=fuzzer.
 DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 LINEAGE_FUZZER_READINESS_DATASET_URN=urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)
-LINEAGE_FUZZER_CANDIDATE_SHA=3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a
+LINEAGE_FUZZER_CANDIDATE_SHA=472d4d850c9b6e34529eddb0507a4e015987d33f
 LINEAGE_FUZZER_CONTEXT_FILE=/var/lib/datahub-hackathon/lineage-fuzzer/campaign-context.json
 LINEAGE_FUZZER_ALLOWED_DATABASE_PATHS=demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb
 LINEAGE_FUZZER_ALLOWED_ENVIRONMENTS=DEV
@@ -149,7 +149,7 @@ Do not silently fall back to local context. A saved file is accepted only with i
 receipt, promoted 40-character candidate SHA, seeded catalog-state digest, catalog-plan digest,
 current fixture checksums, exact MCP tool schemas, and complete DataHub observations.
 
-1. Promote exact candidate `3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a`. Keep
+1. Promote exact candidate `472d4d850c9b6e34529eddb0507a4e015987d33f`. Keep
    `LINEAGE_FUZZER_INJECTION_ENABLED=false` and do not expose the public run yet.
 2. Install/build, then seed the mounted disposable DuckDB fixture:
 
@@ -276,8 +276,9 @@ Coordinator promotion of exact candidate
 - Its exact direction shape is
   `{"downstreams":{"facets":[...],"hasMore":false,"offset":0,"returned":N,"searchResults":[...],"total":N}}`.
 - Nonempty results contain the expected dataset entity at `downstreams.searchResults[*].entity`
-  with numeric `degree=1`; empty downstreams return the same envelope with zero counts and an
-  empty list.
+  with numeric `degree=1`. At this point the local contract assumed empty downstreams returned
+  the same envelope with zero counts and an empty list; the fourth live finding below corrects
+  that assumption.
 - Governance aggregation facets contain unrelated nested entity URNs but remain outside
   `downstreams.searchResults`.
 - Candidate `3633f21` correctly stopped recursive discovery but incorrectly assumed the synthetic
@@ -299,11 +300,43 @@ envelope correction:
   response digest but never traversed for lineage.
 - Numeric direct degree, dataset type/location, source exclusion, uniqueness, foreign/unexpected
   rejection, completeness, and canonical sorting remain enforced.
-- Exact regressions cover nested nonempty and empty downstreams plus malformed, ambiguous,
+- Exact regressions cover nested nonempty downstreams plus malformed, ambiguous,
   wrong-direction, paginated, incomplete, foreign, non-direct, duplicate, and contradictory
   results. No unproven top-level compatibility is retained.
 - Entity, schema, assertion, candidate SHA, catalog state/plan, fixture checksum, raw-response
   digest, context receipt, sandbox, namespace, and mutation gates are unchanged.
+
+Coordinator promotion of exact candidate
+`3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a` established:
+
+- Strict capture reached lineage pagination validation after the approved catalog again verified.
+- The real pinned MCP exposes two exact downstream direction variants.
+- Nonempty directions contain exactly `facets`, `hasMore`, `offset`, `returned`,
+  `searchResults`, and `total`. The observed counts are `1/1` or `2/2`, `hasMore=false`, and
+  `offset=0`.
+- Empty directions for `fuzzer.marts.daily_revenue` and
+  `fuzzer.reporting.executive_dashboard` contain exactly `facets` and integer `total=0`.
+  Their `facets` value is a one-element list; all four paging/result keys are omitted.
+- Candidate `3a25d79` incorrectly required the full six-key direction for empty results and
+  therefore failed closed on this truthful pinned response.
+- No live context receipt, public judge campaign, reset, or new isolation result was claimed.
+
+Candidate `472d4d850c9b6e34529eddb0507a4e015987d33f` makes only the exact zero-result
+compatibility correction:
+
+- An empty direction is accepted only when its key set is exactly `{"facets","total"}`,
+  `facets` is a list, `total` has exact integer type, and `total == 0`.
+- A short-form nonzero total, any extra field, any partial/mixed paging shape, and a synthetic
+  full six-field empty direction fail closed.
+- The full direction remains required for nonempty results and must contain a positive exact
+  `returned` count, an equally sized `searchResults` list, matching integer `total`,
+  `hasMore=false`, and integer `offset=0`.
+- Numeric direct degree, dataset type/location, source exclusion, uniqueness, exact expected
+  downstream comparison, foreign rejection, and canonical sorting are unchanged.
+- Entity, schema, assertion, candidate SHA, catalog state/plan, fixture checksum, raw-response
+  digest, context receipt, sandbox, namespace, and mutation gates are unchanged.
+- Pinned regressions reproduce the exact one-facet short empty envelope and reject short-form
+  nonzero, extra-key, mixed, and full-empty variants.
 
 ## Readiness and judge UI contract
 
@@ -360,7 +393,7 @@ Working-tree checks:
 git diff --check
 ```
 
-Results: 116 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
+Results: 120 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
 The test suite covers exact seed payloads, pinned SDK deserialization, idempotent reset/reseed,
 partial reset failure receipts, tombstones, foreign namespaces, full pinned MCP/GraphQL response
 shapes, forged/incomplete snapshots, DataHub-derived controls, immutable evidence, public
@@ -370,19 +403,19 @@ Exact-archive command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\verify_archive.ps1 `
-  -Commit 3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a
+  -Commit 472d4d850c9b6e34529eddb0507a4e015987d33f
 ```
 
 Result:
 
 ```text
-verified_archive commit=3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a
+verified_archive commit=472d4d850c9b6e34529eddb0507a4e015987d33f
 wheel=lineage_fuzzer-0.1.0-py3-none-any.whl
 ```
 
 The verifier extracted `git archive` into a disposable directory, scanned all 81 archived files,
 created a fresh environment, installed `.[dev,datahub]`, built and force-reinstalled the wheel,
-imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 116 tests and Ruff, seeded the fixture,
+imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 120 tests and Ruff, seeded the fixture,
 ran baseline controls, and exercised the judge root/plan through `TestClient`.
 
 ## Preserved live assertion proof
@@ -432,7 +465,7 @@ new explicit proof.
   campaign-heavy and should remain single-flight.
 - DuckDB, snapshots, context receipts, catalog receipts, and campaign evidence belong only under
   the allocated state/fixture roots and remain outside Git.
-- The expanded catalog seed, schema compatibility, and real nested lineage envelope are
-  coordinator-observed live. The exact direction-envelope correction is locally and
-  archive-verified; promotion retry, live capture, judge run, reset, and new isolation evidence
-  remain coordinator-owned.
+- The expanded catalog seed, schema compatibility, nonempty nested lineage envelope, and short
+  empty lineage envelope are coordinator-observed live. The exact two-variant direction contract
+  is locally and archive-verified; promotion retry, live capture, judge run, reset, and new
+  isolation evidence remain coordinator-owned.
