@@ -4,17 +4,17 @@
 
 | Field | Value |
 |---|---|
-| Status | `Ready for coordinator promotion and guarded live capture; no expanded live result claimed` |
-| Product candidate | `2fe34e4366e2c25db502ceffba7a8e24bc0dc58a` |
+| Status | `Ready for coordinator promotion retry and guarded live capture` |
+| Product candidate | `99c0924677971ed1cf0c47ea2c1bd76fc4be8b98` |
 | Branch | `main` |
 | Canonical origin | `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git` |
 | Milestone | Complete six-dataset/five-edge DataHub contract, strict live context, three-fault campaign, immutable evidence, generated SQL, restoration, and judge UI |
-| Local tests | `102 passed` |
+| Local tests | `105 passed` |
 | Lint | `python -m ruff check src tests scripts` passed |
 | Secret scan | `secret_scan=clean tracked_files=81` |
-| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 102 tests, Ruff, fixture/controls commands, and judge UI smoke |
+| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 105 tests, Ruff, fixture/controls commands, and judge UI smoke |
 | Local campaign | `status=proved_and_restored`, baseline `1/3 (33.3%)`, improved `3/3 (100.0%)`, restoration true |
-| Live status | The earlier assertion proof remains verified and preserved. The expanded six-entity seed, capture, and judge campaign have not been run live by this project task. |
+| Live status | Coordinator verified the approved six-entity seed on deployed `2fe34e4`; capture then failed closed on non-semantic MCP schema ordering. No live context or judge campaign was claimed. The earlier assertion proof remains verified and preserved. |
 | AWS/deployment activity | None from this project task |
 
 This project chat owns Lineage Fuzzer product code and evidence contracts. The portfolio coordinator
@@ -129,7 +129,7 @@ DATAHUB_PROJECT_TAG=project-lineage-fuzzer
 DATAHUB_URN_PREFIX=fuzzer.
 DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 LINEAGE_FUZZER_READINESS_DATASET_URN=urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)
-LINEAGE_FUZZER_CANDIDATE_SHA=2fe34e4366e2c25db502ceffba7a8e24bc0dc58a
+LINEAGE_FUZZER_CANDIDATE_SHA=99c0924677971ed1cf0c47ea2c1bd76fc4be8b98
 LINEAGE_FUZZER_CONTEXT_FILE=/var/lib/datahub-hackathon/lineage-fuzzer/campaign-context.json
 LINEAGE_FUZZER_ALLOWED_DATABASE_PATHS=demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb
 LINEAGE_FUZZER_ALLOWED_ENVIRONMENTS=DEV
@@ -149,7 +149,7 @@ Do not silently fall back to local context. A saved file is accepted only with i
 receipt, promoted 40-character candidate SHA, seeded catalog-state digest, catalog-plan digest,
 current fixture checksums, exact MCP tool schemas, and complete DataHub observations.
 
-1. Promote exact candidate `2fe34e4366e2c25db502ceffba7a8e24bc0dc58a`. Keep
+1. Promote exact candidate `99c0924677971ed1cf0c47ea2c1bd76fc4be8b98`. Keep
    `LINEAGE_FUZZER_INJECTION_ENABLED=false` and do not expose the public run yet.
 2. Install/build, then seed the mounted disposable DuckDB fixture:
 
@@ -205,7 +205,34 @@ current fixture checksums, exact MCP tool schemas, and complete DataHub observat
     Never search-delete or globally reset DataHub. Roll the app image/config back to the prior
     coordinator-approved version and preserve all failed receipts for diagnosis.
 
-No expanded live seed, capture, campaign, reset, or foreign-isolation success is claimed here.
+The complete expanded seed is coordinator-verified live on the preceding candidate. No successful
+live context capture, judge campaign, reset, or new foreign-isolation evidence is claimed here.
+
+## Coordinator live capture finding and correction
+
+Coordinator promotion of exact candidate
+`2fe34e4366e2c25db502ceffba7a8e24bc0dc58a` established:
+
+- The exact approval-bound six-dataset seed succeeded and verified the complete catalog contract.
+- Strict context capture then failed closed on `fuzzer.raw.customers`.
+- The pinned MCP response was complete and returned correct field metadata in alphabetical order:
+  `country_code`, `customer_id`, `customer_name`, `segment`.
+- The contract declaration order is `customer_id`, `customer_name`, `segment`, `country_code`.
+- Schema field order is non-semantic. Candidate `2fe34e4` incorrectly required tuple order equality.
+- No live context receipt, public judge campaign, reset, or new isolation result was claimed.
+
+Candidate `99c0924677971ed1cf0c47ea2c1bd76fc4be8b98` makes only the project-owned
+compatibility correction:
+
+- Captured field paths are compared as an exact order-insensitive set.
+- Duplicate observations fail closed before set comparison can hide them.
+- Missing and extra paths continue to fail closed.
+- Accepted paths are canonicalized to contract declaration order before snapshotting, so MCP
+  response ordering cannot change the typed context digest.
+- Entity metadata, lineage, assertions, candidate SHA, catalog state/plan, fixture checksums, raw
+  response digests, context receipt, sandbox, namespace, and mutation gates are unchanged.
+- Regression fixtures use the exact observed alphabetical `raw.customers` response and separately
+  reject duplicate, missing, and extra paths.
 
 ## Readiness and judge UI contract
 
@@ -262,7 +289,7 @@ Working-tree checks:
 git diff --check
 ```
 
-Results: 102 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
+Results: 105 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
 The test suite covers exact seed payloads, pinned SDK deserialization, idempotent reset/reseed,
 partial reset failure receipts, tombstones, foreign namespaces, full pinned MCP/GraphQL response
 shapes, forged/incomplete snapshots, DataHub-derived controls, immutable evidence, public
@@ -272,19 +299,19 @@ Exact-archive command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\verify_archive.ps1 `
-  -Commit 2fe34e4366e2c25db502ceffba7a8e24bc0dc58a
+  -Commit 99c0924677971ed1cf0c47ea2c1bd76fc4be8b98
 ```
 
 Result:
 
 ```text
-verified_archive commit=2fe34e4366e2c25db502ceffba7a8e24bc0dc58a
+verified_archive commit=99c0924677971ed1cf0c47ea2c1bd76fc4be8b98
 wheel=lineage_fuzzer-0.1.0-py3-none-any.whl
 ```
 
 The verifier extracted `git archive` into a disposable directory, scanned all 81 archived files,
 created a fresh environment, installed `.[dev,datahub]`, built and force-reinstalled the wheel,
-imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 102 tests and Ruff, seeded the fixture,
+imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 105 tests and Ruff, seeded the fixture,
 ran baseline controls, and exercised the judge root/plan through `TestClient`.
 
 ## Preserved live assertion proof
@@ -334,5 +361,6 @@ new explicit proof.
   campaign-heavy and should remain single-flight.
 - DuckDB, snapshots, context receipts, catalog receipts, and campaign evidence belong only under
   the allocated state/fixture roots and remain outside Git.
-- The expanded catalog/campaign contract is locally and archive verified, but live promotion,
-  capture, judge run, and isolation remain coordinator-owned pending evidence.
+- The expanded catalog seed is coordinator-verified live. This correction is locally and
+  archive-verified; promotion retry, live capture, judge run, reset, and new isolation evidence
+  remain coordinator-owned.
