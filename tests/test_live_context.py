@@ -124,11 +124,19 @@ def test_direct_lineage_accepts_exact_nested_nonempty_and_empty_envelopes() -> N
     }
     empty = {
         "downstreams": {
-            "facets": [],
-            "hasMore": False,
-            "offset": 0,
-            "returned": 0,
-            "searchResults": [],
+            "facets": [
+                {
+                    "field": "platform",
+                    "aggregations": [
+                        {
+                            "entity": {
+                                "urn": "urn:li:dataPlatform:duckdb",
+                                "type": "DATA_PLATFORM",
+                            }
+                        }
+                    ],
+                }
+            ],
             "total": 0,
         }
     }
@@ -184,6 +192,10 @@ def test_relabeling_local_snapshot_cannot_create_live_evidence(tmp_path: Path) -
         PinnedMCP(malformed_lineage_envelope=True),
         PinnedMCP(top_level_lineage_envelope=True),
         PinnedMCP(paginated_lineage=True),
+        PinnedMCP(short_nonzero_lineage=True),
+        PinnedMCP(short_extra_lineage=True),
+        PinnedMCP(mixed_empty_lineage=True),
+        PinnedMCP(full_empty_lineage=True),
     ),
 )
 def test_capture_rejects_incomplete_or_foreign_catalog_shapes(

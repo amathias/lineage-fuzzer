@@ -151,6 +151,10 @@ class PinnedMCP:
         malformed_lineage_envelope: bool = False,
         top_level_lineage_envelope: bool = False,
         paginated_lineage: bool = False,
+        short_nonzero_lineage: bool = False,
+        short_extra_lineage: bool = False,
+        mixed_empty_lineage: bool = False,
+        full_empty_lineage: bool = False,
     ) -> None:
         self.incomplete_lineage = incomplete_lineage
         self.missing_schema_field = missing_schema_field
@@ -167,6 +171,10 @@ class PinnedMCP:
         self.malformed_lineage_envelope = malformed_lineage_envelope
         self.top_level_lineage_envelope = top_level_lineage_envelope
         self.paginated_lineage = paginated_lineage
+        self.short_nonzero_lineage = short_nonzero_lineage
+        self.short_extra_lineage = short_extra_lineage
+        self.mixed_empty_lineage = mixed_empty_lineage
+        self.full_empty_lineage = full_empty_lineage
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     async def describe_tools(self) -> tuple[dict[str, Any], ...]:
@@ -287,14 +295,32 @@ class PinnedMCP:
                         ],
                     },
                 ]
-            direction = {
-                "facets": facets,
-                "hasMore": False,
-                "offset": 0,
-                "returned": len(results),
-                "searchResults": results,
-                "total": len(results),
-            }
+            if results:
+                direction = {
+                    "facets": facets,
+                    "hasMore": False,
+                    "offset": 0,
+                    "returned": len(results),
+                    "searchResults": results,
+                    "total": len(results),
+                }
+            else:
+                direction = {
+                    "facets": [
+                        {
+                            "field": "platform",
+                            "aggregations": [
+                                {
+                                    "entity": {
+                                        "urn": "urn:li:dataPlatform:duckdb",
+                                        "type": "DATA_PLATFORM",
+                                    }
+                                }
+                            ],
+                        }
+                    ],
+                    "total": 0,
+                }
             if urn == TABLE_URNS["raw.orders"]:
                 if self.malformed_lineage_envelope:
                     direction["returned"] = len(results) + 1
@@ -307,6 +333,22 @@ class PinnedMCP:
                     return {"upstreams": direction}
                 if self.ambiguous_lineage_envelope:
                     return {"downstreams": direction, "upstreams": dict(direction)}
+            if urn == TABLE_URNS["reporting.executive_dashboard"]:
+                if self.short_nonzero_lineage:
+                    direction["total"] = 1
+                if self.short_extra_lineage:
+                    direction["offset"] = 0
+                if self.mixed_empty_lineage:
+                    direction["searchResults"] = []
+                if self.full_empty_lineage:
+                    direction = {
+                        "facets": direction["facets"],
+                        "hasMore": False,
+                        "offset": 0,
+                        "returned": 0,
+                        "searchResults": [],
+                        "total": 0,
+                    }
             return {"downstreams": direction}
         raise AssertionError(name)
 

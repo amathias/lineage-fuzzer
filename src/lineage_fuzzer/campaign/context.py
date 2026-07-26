@@ -504,6 +504,19 @@ def _direct_lineage_urns(value: Any, *, source_urn: str) -> tuple[str, ...]:
     if not isinstance(value, dict) or set(value) != {"downstreams"}:
         raise ContextCaptureError("one-hop lineage response has an invalid result envelope")
     downstreams = value["downstreams"]
+    if not isinstance(downstreams, dict):
+        raise ContextCaptureError("one-hop lineage response has invalid pagination metadata")
+    if set(downstreams) == {"facets", "total"}:
+        if (
+            not isinstance(downstreams["facets"], list)
+            or type(downstreams["total"]) is not int
+            or downstreams["total"] != 0
+        ):
+            raise ContextCaptureError(
+                "one-hop lineage response has invalid pagination metadata"
+            )
+        return ()
+
     required_fields = {
         "facets",
         "hasMore",
@@ -513,14 +526,14 @@ def _direct_lineage_urns(value: Any, *, source_urn: str) -> tuple[str, ...]:
         "total",
     }
     if (
-        not isinstance(downstreams, dict)
-        or set(downstreams) != required_fields
+        set(downstreams) != required_fields
         or not isinstance(downstreams["facets"], list)
         or not isinstance(downstreams["searchResults"], list)
         or downstreams["hasMore"] is not False
         or type(downstreams["offset"]) is not int
         or downstreams["offset"] != 0
         or type(downstreams["returned"]) is not int
+        or downstreams["returned"] <= 0
         or downstreams["returned"] != len(downstreams["searchResults"])
         or type(downstreams["total"]) is not int
         or downstreams["total"] != downstreams["returned"]
