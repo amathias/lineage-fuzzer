@@ -146,6 +146,11 @@ class PinnedMCP:
         non_direct_lineage: bool = False,
         duplicate_lineage: bool = False,
         invalid_lineage_type: bool = False,
+        wrong_direction_envelope: bool = False,
+        ambiguous_lineage_envelope: bool = False,
+        malformed_lineage_envelope: bool = False,
+        top_level_lineage_envelope: bool = False,
+        paginated_lineage: bool = False,
     ) -> None:
         self.incomplete_lineage = incomplete_lineage
         self.missing_schema_field = missing_schema_field
@@ -157,6 +162,11 @@ class PinnedMCP:
         self.non_direct_lineage = non_direct_lineage
         self.duplicate_lineage = duplicate_lineage
         self.invalid_lineage_type = invalid_lineage_type
+        self.wrong_direction_envelope = wrong_direction_envelope
+        self.ambiguous_lineage_envelope = ambiguous_lineage_envelope
+        self.malformed_lineage_envelope = malformed_lineage_envelope
+        self.top_level_lineage_envelope = top_level_lineage_envelope
+        self.paginated_lineage = paginated_lineage
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     async def describe_tools(self) -> tuple[dict[str, Any], ...]:
@@ -238,39 +248,66 @@ class PinnedMCP:
                     )
                 if self.invalid_lineage_type:
                     results[0]["entity"]["type"] = "CHART"
-            response = {
-                "searchResults": results,
-                "count": len(downstreams),
-            }
+            facets: list[dict[str, Any]] = []
             if urn in {
                 TABLE_URNS["raw.customers"],
                 TABLE_URNS["raw.orders"],
                 TABLE_URNS["staging.orders_enriched"],
                 TABLE_URNS["marts.customer_value"],
             }:
-                response["source"] = {
-                    "entity": {
-                        "urn": urn,
-                        "type": "DATASET",
-                        "owner": {
-                            "entity": {"urn": OWNER_URN, "type": "CORP_USER"}
-                        },
-                        "platform": {
-                            "entity": {
-                                "urn": "urn:li:dataPlatform:duckdb",
-                                "type": "DATA_PLATFORM",
+                facets = [
+                    {
+                        "field": "owners",
+                        "aggregations": [
+                            {"entity": {"urn": OWNER_URN, "type": "CORP_USER"}}
+                        ],
+                    },
+                    {
+                        "field": "platform",
+                        "aggregations": [
+                            {
+                                "entity": {
+                                    "urn": "urn:li:dataPlatform:duckdb",
+                                    "type": "DATA_PLATFORM",
+                                }
                             }
-                        },
-                        "domain": {
-                            "entity": {"urn": DOMAIN_URN, "type": "DOMAIN"}
-                        },
-                        "tags": [
+                        ],
+                    },
+                    {
+                        "field": "domain",
+                        "aggregations": [
+                            {"entity": {"urn": DOMAIN_URN, "type": "DOMAIN"}}
+                        ],
+                    },
+                    {
+                        "field": "tags",
+                        "aggregations": [
                             {"entity": {"urn": PROJECT_TAG_URN, "type": "TAG"}},
                             {"entity": {"urn": SANDBOX_TAG_URN, "type": "TAG"}},
                         ],
-                    }
-                }
-            return response
+                    },
+                ]
+            direction = {
+                "facets": facets,
+                "hasMore": False,
+                "offset": 0,
+                "returned": len(results),
+                "searchResults": results,
+                "total": len(results),
+            }
+            if urn == TABLE_URNS["raw.orders"]:
+                if self.malformed_lineage_envelope:
+                    direction["returned"] = len(results) + 1
+                if self.paginated_lineage:
+                    direction["hasMore"] = True
+                    direction["total"] = len(results) + 1
+                if self.top_level_lineage_envelope:
+                    return direction
+                if self.wrong_direction_envelope:
+                    return {"upstreams": direction}
+                if self.ambiguous_lineage_envelope:
+                    return {"downstreams": direction, "upstreams": dict(direction)}
+            return {"downstreams": direction}
         raise AssertionError(name)
 
 

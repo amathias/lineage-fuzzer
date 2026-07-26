@@ -501,11 +501,34 @@ def _schema_field_paths(value: Any) -> tuple[str, ...]:
 
 
 def _direct_lineage_urns(value: Any, *, source_urn: str) -> tuple[str, ...]:
-    if not isinstance(value, dict) or not isinstance(value.get("searchResults"), list):
+    if not isinstance(value, dict) or set(value) != {"downstreams"}:
         raise ContextCaptureError("one-hop lineage response has an invalid result envelope")
+    downstreams = value["downstreams"]
+    required_fields = {
+        "facets",
+        "hasMore",
+        "offset",
+        "returned",
+        "searchResults",
+        "total",
+    }
+    if (
+        not isinstance(downstreams, dict)
+        or set(downstreams) != required_fields
+        or not isinstance(downstreams["facets"], list)
+        or not isinstance(downstreams["searchResults"], list)
+        or downstreams["hasMore"] is not False
+        or type(downstreams["offset"]) is not int
+        or downstreams["offset"] != 0
+        or type(downstreams["returned"]) is not int
+        or downstreams["returned"] != len(downstreams["searchResults"])
+        or type(downstreams["total"]) is not int
+        or downstreams["total"] != downstreams["returned"]
+    ):
+        raise ContextCaptureError("one-hop lineage response has invalid pagination metadata")
 
     discovered: set[str] = set()
-    for result in value["searchResults"]:
+    for result in downstreams["searchResults"]:
         if not isinstance(result, dict) or not isinstance(result.get("entity"), dict):
             raise ContextCaptureError("one-hop lineage response has an invalid dataset result")
         entity = result["entity"]

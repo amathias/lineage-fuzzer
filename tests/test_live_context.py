@@ -10,13 +10,19 @@ from fastapi.testclient import TestClient
 from lineage_fuzzer.api import create_app
 from lineage_fuzzer.campaign.context import (
     ContextCaptureError,
+    _direct_lineage_urns,
     context_receipt_path,
     demo_context_snapshot,
     load_live_context_snapshot,
     save_live_context_snapshot,
 )
 from lineage_fuzzer.config import Settings
-from lineage_fuzzer.datahub.fixture_contract import DEMO_LINEAGE
+from lineage_fuzzer.datahub.fixture_contract import (
+    DASHBOARD_URN,
+    DEMO_LINEAGE,
+    RAW_ORDERS_URN,
+    STAGING_ORDERS_URN,
+)
 from lineage_fuzzer.demo_cli import main
 from tests.live_contract import (
     CANDIDATE_SHA,
@@ -88,6 +94,51 @@ def test_capture_ignores_governance_entities_outside_lineage_results(
     assert context.lineage == DEMO_LINEAGE
 
 
+def test_direct_lineage_accepts_exact_nested_nonempty_and_empty_envelopes() -> None:
+    nonempty = {
+        "downstreams": {
+            "facets": [
+                {
+                    "field": "owners",
+                    "aggregations": [
+                        {
+                            "entity": {
+                                "urn": "urn:li:corpuser:lineage-fuzzer",
+                                "type": "CORP_USER",
+                            }
+                        }
+                    ],
+                }
+            ],
+            "hasMore": False,
+            "offset": 0,
+            "returned": 1,
+            "searchResults": [
+                {
+                    "degree": 1,
+                    "entity": {"type": "DATASET", "urn": STAGING_ORDERS_URN},
+                }
+            ],
+            "total": 1,
+        }
+    }
+    empty = {
+        "downstreams": {
+            "facets": [],
+            "hasMore": False,
+            "offset": 0,
+            "returned": 0,
+            "searchResults": [],
+            "total": 0,
+        }
+    }
+
+    assert _direct_lineage_urns(nonempty, source_urn=RAW_ORDERS_URN) == (
+        STAGING_ORDERS_URN,
+    )
+    assert _direct_lineage_urns(empty, source_urn=DASHBOARD_URN) == ()
+
+
 def test_live_context_store_round_trips_with_bound_receipt(tmp_path: Path) -> None:
     settings = make_settings(tmp_path)
     prepare_bound_runtime(tmp_path, settings)
@@ -128,6 +179,11 @@ def test_relabeling_local_snapshot_cannot_create_live_evidence(tmp_path: Path) -
         PinnedMCP(non_direct_lineage=True),
         PinnedMCP(duplicate_lineage=True),
         PinnedMCP(invalid_lineage_type=True),
+        PinnedMCP(wrong_direction_envelope=True),
+        PinnedMCP(ambiguous_lineage_envelope=True),
+        PinnedMCP(malformed_lineage_envelope=True),
+        PinnedMCP(top_level_lineage_envelope=True),
+        PinnedMCP(paginated_lineage=True),
     ),
 )
 def test_capture_rejects_incomplete_or_foreign_catalog_shapes(
