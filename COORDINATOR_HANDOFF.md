@@ -5,16 +5,16 @@
 | Field | Value |
 |---|---|
 | Status | `Ready for coordinator promotion retry and guarded live capture` |
-| Product candidate | `3633f2113779469f938c07cffd1510851e344570` |
+| Product candidate | `3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a` |
 | Branch | `main` |
 | Canonical origin | `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git` |
 | Milestone | Complete six-dataset/five-edge DataHub contract, strict live context, three-fault campaign, immutable evidence, generated SQL, restoration, and judge UI |
-| Local tests | `110 passed` |
+| Local tests | `116 passed` |
 | Lint | `python -m ruff check src tests scripts` passed |
 | Secret scan | `secret_scan=clean tracked_files=81` |
-| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 110 tests, Ruff, fixture/controls commands, and judge UI smoke |
+| Archive verification | Exact `git archive` of the product candidate passed isolated install, wheel build/reinstall/import, 116 tests, Ruff, fixture/controls commands, and judge UI smoke |
 | Local campaign | `status=proved_and_restored`, baseline `1/3 (33.3%)`, improved `3/3 (100.0%)`, restoration true |
-| Live status | Coordinator repeatedly verified the approved 6-dataset/5-edge/3-assertion seed. Deployed `99c0924` passed schema validation, then capture failed closed because governance entities were recursively interpreted as lineage. No live context or judge campaign was claimed. The earlier assertion proof remains preserved. |
+| Live status | Coordinator repeatedly verified the approved 6-dataset/5-edge/3-assertion seed and real schema ordering. Deployed `3633f21` then rejected the real nested `downstreams.searchResults` envelope. No live context or judge campaign was claimed. The earlier assertion proof remains preserved. |
 | AWS/deployment activity | None from this project task |
 
 This project chat owns Lineage Fuzzer product code and evidence contracts. The portfolio coordinator
@@ -129,7 +129,7 @@ DATAHUB_PROJECT_TAG=project-lineage-fuzzer
 DATAHUB_URN_PREFIX=fuzzer.
 DEMO_FIXTURE_ROOT=demo/fixtures/lineage-fuzzer
 LINEAGE_FUZZER_READINESS_DATASET_URN=urn:li:dataset:(urn:li:dataPlatform:duckdb,fuzzer.raw.orders,DEV)
-LINEAGE_FUZZER_CANDIDATE_SHA=3633f2113779469f938c07cffd1510851e344570
+LINEAGE_FUZZER_CANDIDATE_SHA=3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a
 LINEAGE_FUZZER_CONTEXT_FILE=/var/lib/datahub-hackathon/lineage-fuzzer/campaign-context.json
 LINEAGE_FUZZER_ALLOWED_DATABASE_PATHS=demo/fixtures/lineage-fuzzer/lineage_fuzzer.duckdb
 LINEAGE_FUZZER_ALLOWED_ENVIRONMENTS=DEV
@@ -149,7 +149,7 @@ Do not silently fall back to local context. A saved file is accepted only with i
 receipt, promoted 40-character candidate SHA, seeded catalog-state digest, catalog-plan digest,
 current fixture checksums, exact MCP tool schemas, and complete DataHub observations.
 
-1. Promote exact candidate `3633f2113779469f938c07cffd1510851e344570`. Keep
+1. Promote exact candidate `3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a`. Keep
    `LINEAGE_FUZZER_INJECTION_ENABLED=false` and do not expose the public run yet.
 2. Install/build, then seed the mounted disposable DuckDB fixture:
 
@@ -267,6 +267,44 @@ extraction correction:
   `staging.orders_enriched`, and `marts.customer_value`, while retaining incomplete, foreign,
   missing-degree, non-direct, duplicate, and contradictory-type failures.
 
+Coordinator promotion of exact candidate
+`3633f2113779469f938c07cffd1510851e344570` established:
+
+- The strict parser failed closed with
+  `one-hop lineage response has an invalid result envelope`.
+- The real pinned `upstream=false` response does not place `searchResults` at top level.
+- Its exact direction shape is
+  `{"downstreams":{"facets":[...],"hasMore":false,"offset":0,"returned":N,"searchResults":[...],"total":N}}`.
+- Nonempty results contain the expected dataset entity at `downstreams.searchResults[*].entity`
+  with numeric `degree=1`; empty downstreams return the same envelope with zero counts and an
+  empty list.
+- Governance aggregation facets contain unrelated nested entity URNs but remain outside
+  `downstreams.searchResults`.
+- Candidate `3633f21` correctly stopped recursive discovery but incorrectly assumed the synthetic
+  top-level `searchResults` test envelope.
+- No live context receipt, public judge campaign, reset, or new isolation result was claimed.
+
+Candidate `3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a` makes only the exact direction
+envelope correction:
+
+- The only accepted top-level shape is one unambiguous `downstreams` object for the existing
+  `upstream=false` request.
+- The direction object must contain exactly `facets`, `hasMore`, `offset`, `returned`,
+  `searchResults`, and `total`.
+- `facets` and `searchResults` must be lists; `offset` must be integer zero; `hasMore` must be
+  false; `returned` must equal the result-list length; and `total` must equal `returned`.
+- Pagination, inconsistent counters, top-level `searchResults`, upstream-only, dual-direction,
+  missing-field, and extra-field envelopes fail closed.
+- Only `downstreams.searchResults` entries are parsed. Governance facets are retained in the raw
+  response digest but never traversed for lineage.
+- Numeric direct degree, dataset type/location, source exclusion, uniqueness, foreign/unexpected
+  rejection, completeness, and canonical sorting remain enforced.
+- Exact regressions cover nested nonempty and empty downstreams plus malformed, ambiguous,
+  wrong-direction, paginated, incomplete, foreign, non-direct, duplicate, and contradictory
+  results. No unproven top-level compatibility is retained.
+- Entity, schema, assertion, candidate SHA, catalog state/plan, fixture checksum, raw-response
+  digest, context receipt, sandbox, namespace, and mutation gates are unchanged.
+
 ## Readiness and judge UI contract
 
 In `APP_ENV=hackathon`, readiness and the public plan require:
@@ -322,7 +360,7 @@ Working-tree checks:
 git diff --check
 ```
 
-Results: 110 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
+Results: 116 tests passed; Ruff passed; `secret_scan=clean tracked_files=81`; diff check passed.
 The test suite covers exact seed payloads, pinned SDK deserialization, idempotent reset/reseed,
 partial reset failure receipts, tombstones, foreign namespaces, full pinned MCP/GraphQL response
 shapes, forged/incomplete snapshots, DataHub-derived controls, immutable evidence, public
@@ -332,19 +370,19 @@ Exact-archive command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\verify_archive.ps1 `
-  -Commit 3633f2113779469f938c07cffd1510851e344570
+  -Commit 3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a
 ```
 
 Result:
 
 ```text
-verified_archive commit=3633f2113779469f938c07cffd1510851e344570
+verified_archive commit=3a25d79aa1d9b81ebc48ad3a3b567ce6e4119a0a
 wheel=lineage_fuzzer-0.1.0-py3-none-any.whl
 ```
 
 The verifier extracted `git archive` into a disposable directory, scanned all 81 archived files,
 created a fresh environment, installed `.[dev,datahub]`, built and force-reinstalled the wheel,
-imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 110 tests and Ruff, seeded the fixture,
+imported `datahub`, `lineage_fuzzer`, and `mcp`, reran all 116 tests and Ruff, seeded the fixture,
 ran baseline controls, and exercised the judge root/plan through `TestClient`.
 
 ## Preserved live assertion proof
@@ -394,6 +432,7 @@ new explicit proof.
   campaign-heavy and should remain single-flight.
 - DuckDB, snapshots, context receipts, catalog receipts, and campaign evidence belong only under
   the allocated state/fixture roots and remain outside Git.
-- The expanded catalog seed and schema compatibility are coordinator-verified live. The
-  lineage-result correction is locally and archive-verified; promotion retry, live capture, judge
-  run, reset, and new isolation evidence remain coordinator-owned.
+- The expanded catalog seed, schema compatibility, and real nested lineage envelope are
+  coordinator-observed live. The exact direction-envelope correction is locally and
+  archive-verified; promotion retry, live capture, judge run, reset, and new isolation evidence
+  remain coordinator-owned.
