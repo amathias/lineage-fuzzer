@@ -4,11 +4,11 @@
 
 | Field | Value |
 |---|---|
-| Status | `Live reset/reseed/capture recovery complete; product candidate unchanged` |
+| Status | `Submission assets finalized; deployed product candidate unchanged` |
 | Product candidate | `92db02471a6bdb517be2db934a146b71509fe442` |
 | Branch | `main` |
 | Canonical origin | `git@github-datahub-lineage-fuzzer:amathias/lineage-fuzzer.git` |
-| Milestone | Complete six-dataset/five-edge DataHub contract, strict live context, three-fault campaign, immutable evidence, generated SQL, restoration, and judge UI |
+| Milestone | Complete product, restored live evidence, judge-ready Devpost copy, and under-three-minute recording runbook |
 | Local tests | `122 passed` |
 | Lint | `python -m ruff check src tests scripts` passed |
 | Secret scan | `secret_scan=clean tracked_files=81` |
@@ -21,6 +21,32 @@ This project chat owns Lineage Fuzzer product code and evidence contracts. The p
 owns shared DataHub, AWS, deployment, credentials, public routing, and cross-project isolation. Do
 not edit the live host from this project chat, and do not place a token in a command, log, prompt,
 receipt, screenshot, fixture, or Git.
+
+## Final submission assets
+
+The final public submission package is documentation-only and does not change or redeploy product
+candidate `92db02471a6bdb517be2db934a146b71509fe442`.
+
+| Asset | Exact value |
+|---|---|
+| Public application | `https://fuzzer.datahub-hackathon.aaronmathias.com` |
+| Public repository | `https://github.com/amathias/lineage-fuzzer` |
+| Devpost copy | `SUBMISSION.md` |
+| Recording runbook | `docs/JUDGE_DEMO.md` |
+| Recording target | `2:45`; hard stop `2:55` |
+
+The submission copy covers category fit, architecture, use case, setup/adoption, challenges,
+accomplishments, DataHub MCP plus supported API integration, and the exact live-evidence boundary.
+The runbook gives a timestamped public-app/public-repository sequence and requires the recording
+to stop rather than substitute local or cached evidence if live context, exact blast matching,
+coverage improvement, or restoration is unavailable. `README.md` now links both final assets and
+the exact public URLs.
+
+Proportional documentation checks passed: Markdown structure and balanced fences, local link
+targets, the exact public URL allowlist, placeholder scan, public-safety pattern scan, tracked-file
+secret scan, docs-only diff scope, and `git diff --check`. Product tests, dependencies, runtime
+configuration, campaign evidence, and SQL controls were not changed or rerun for this
+documentation-only milestone.
 
 ## Fixed allocation
 

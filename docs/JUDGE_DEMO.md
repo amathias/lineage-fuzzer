@@ -1,151 +1,207 @@
-# Judge Demo
+# Judge Demo and Recording Runbook
 
-Lineage Fuzzer runs one immutable seeded campaign against a disposable DuckDB fixture. It mutates
-only `fuzzer.raw.orders`, restores the fixture between every fault, and requires a final six-table
-checksum match before it can return `proved_and_restored`.
+Target duration: **2 minutes 45 seconds**. Hard stop: **2 minutes 55 seconds**.
 
-## Ninety-second story
+The recording uses only the public Lineage Fuzzer application and public repository:
 
-1. Show the six DataHub datasets, five lineage edges, complete schemas, owner, domain, tags, and
-   three baseline custom assertions captured from the live catalog.
-2. Show the current candidate-bound context receipt and immutable campaign SHA-256.
-3. Preview three seeded semantic faults: a 100x amount scale, a 45-day stale partition, and a 10%
-   customer-key null surge.
-4. Approve and run that exact digest.
-5. Show that observed changed-table checksums exactly match the lineage-predicted blast radius.
-6. Show baseline coverage at 1/3 using the controls derived from the captured DataHub assertions.
-7. Open the generated read-only SQL artifact, then show improved coverage at 3/3.
-8. Show the final restoration proof and immutable manifest/context evidence directory.
+- [Live judge application](https://fuzzer.datahub-hackathon.aaronmathias.com)
+- [Public source repository](https://github.com/amathias/lineage-fuzzer)
+- [Generated runnable SQL](https://github.com/amathias/lineage-fuzzer/blob/main/examples/generated/lineage_fuzzer_generated_controls.sql)
 
-## Local development flow
+## Claims the recording must keep separate
 
-Install and verify:
+- The page's campaign context is captured from live open-source DataHub through DataHub MCP plus
+  supported GraphQL reads.
+- The three fault mutations run only against the disposable Lineage Fuzzer DuckDB fixture. They
+  do not mutate DataHub datasets or a production warehouse.
+- A complete expanded live campaign returned `proved_and_restored` on compatible product
+  candidate `472d4d850c9b6e34529eddb0507a4e015987d33f`.
+- The currently deployed candidate
+  `92db02471a6bdb517be2db934a146b71509fe442` subsequently completed approval-bound reset
+  recovery, unchanged reseed, fresh live capture, readiness 200, and an enabled live plan.
+- The “Separate live-proof baseline” card refers to an earlier, separately restored DataHub
+  custom-assertion write/result/re-read proof. Do not describe it as the current campaign's
+  writeback.
 
-```powershell
-python -m venv .venv
-.venv\Scripts\python.exe -m pip install -e ".[dev,datahub]"
-.venv\Scripts\python.exe -m pytest -q
-.venv\Scripts\python.exe -m ruff check .
-.venv\Scripts\python.exe scripts\scan_secrets.py
-```
+One sentence that captures the boundary cleanly:
 
-Seed the local fixture, print its explicitly local plan, and run the UI:
+> DataHub supplies the live graph, schemas, ownership, and baseline assertions; the faults run
+> only in a disposable DuckDB fixture; and a separate approval-bound assertion transaction proves
+> supported DataHub writeback and restoration.
 
-```powershell
-.venv\Scripts\python.exe -m lineage_fuzzer.pipeline_cli seed
-.venv\Scripts\python.exe -m lineage_fuzzer.demo_cli plan
-$env:LINEAGE_FUZZER_INJECTION_ENABLED = "true"
-.venv\Scripts\lineage-fuzzer.exe serve --host 127.0.0.1 --port 8104
-```
+## Before recording
 
-Local mode is labeled `local-fixture-topology`; it is not live DataHub evidence.
+### Public-state check
 
-## Immutable DataHub catalog approvals
+- [ ] Open the [live judge application](https://fuzzer.datahub-hackathon.aaronmathias.com).
+- [ ] Confirm the toolbar says **Current live DataHub context verified**.
+- [ ] Confirm the footer says `Context source: datahub-mcp-live`.
+- [ ] Confirm the footer shows candidate
+      `92db02471a6bdb517be2db934a146b71509fe442`.
+- [ ] Confirm **Approve + run campaign** is enabled.
+- [ ] Confirm the graph and all three fault cards render.
+- [ ] Do not record if the page reports local context, readiness failure, disabled injection, a
+      different candidate, or a campaign error.
 
-Print the complete plans before any mutation:
+### Browser and capture setup
 
-```powershell
-.venv\Scripts\lineage-fuzzer.exe show-datahub-plans
-```
+- [ ] Use a 1920x1080 or larger capture and browser zoom that keeps the graph, fault cards, and
+      result matrix legible.
+- [ ] Pre-open the live application in the first tab and the
+      [generated SQL file](https://github.com/amathias/lineage-fuzzer/blob/main/examples/generated/lineage_fuzzer_generated_controls.sql)
+      in the second.
+- [ ] Hide bookmarks containing private links, close terminals and cloud consoles, disable
+      notifications, and use a clean browser profile.
+- [ ] Keep the browser address bar visible when introducing the live app and repository.
+- [ ] Do not open DataHub credentials, API headers, internal endpoints, logs, receipts, evidence
+      directories, or cloud consoles.
+- [ ] Do not use copyrighted music or third-party footage.
 
-Current exact plan digests:
+### Rehearsal
 
-- complete six-dataset seed:
-  `a4725dd0b241b5dc0dc4da4e9f220c7bca8b349731c3fa255864b4f21ac9f9df`
-- exact dataset/baseline-assertion reset:
-  `46f7a883f8583790b7bce44410cd8bad68c9acfd45700ae60e20bb2d5352b7d6`
-- preserved, separate live-proof assertion plan:
-  `75a4d4f9bedb54bfb847ee1e4ea83b33450c2cf6664cf6fe8c8aa16f7d53094e`
+- [ ] Read the narration aloud once and keep it below 2:45.
+- [ ] Click the campaign button only once. The public endpoint is single-flight and rejects a
+      concurrent run.
+- [ ] Confirm a rehearsal ends with baseline 33.3%, improved 100%, three `EXACT` blast results,
+      and **RESTORATION VERIFIED — all six table checksums match baseline**.
+- [ ] Refresh before the final take so the result reveal happens on camera.
 
-Seed is idempotent and restores `removed=false`. Reset invalidates current context evidence before
-its first write, soft-deletes only the six exact dataset URNs and three exact baseline assertion
-URNs, retains the Domain and Tags, and writes `started`, `failed`, or `completed` receipts. The
-separate `fuzzer.catalog-proof.orders-nonempty` assertion is not part of the reset allowlist.
+## Exact recording sequence
 
-## Coordinator live sequence
+### 0:00-0:16 — Problem and product
 
-Credentials remain out of band. Do not paste or print `DATAHUB_TOKEN`.
+**Screen:** Live app hero, with the public URL visible.
 
-1. Promote the exact clean candidate and seed the mounted local DuckDB fixture.
-2. Set `LINEAGE_FUZZER_CANDIDATE_SHA` to that exact 40-character commit.
-3. Review `show-datahub-plans`, then run the seed command with the exact seed approval:
+**Narration:**
 
-   ```powershell
-   .venv\Scripts\lineage-fuzzer.exe seed-datahub-fixture `
-     --approval-sha256 a4725dd0b241b5dc0dc4da4e9f220c7bca8b349731c3fa255864b4f21ac9f9df
-   ```
+> Passing pipelines can still ship silent failures: a 100x unit change, stale data, or broken join
+> keys. Lineage Fuzzer uses DataHub to break an isolated copy safely and prove whether today's
+> controls catch those failures.
 
-4. Capture the complete live context:
+### 0:16-0:42 — Prove live DataHub context
 
-   ```powershell
-   .venv\Scripts\python.exe -m lineage_fuzzer.demo_cli `
-     capture-live-context `
-     --output .lineage-fuzzer\campaign-context.json
-   ```
+**Screen:** Point to **Current live DataHub context verified**, the approval digest, the six-node
+graph, and the footer values `datahub-mcp-live` and the current candidate.
 
-   Capture reads all six entities, all six schemas, direct one-hop lineage from every entity, and
-   assertions for every dataset. It requires the exact five-edge graph and three assertion
-   definitions. The typed snapshot preserves safe MCP tool schemas, tool/schema/lineage/assertion
-   response digests, and candidate/catalog/fixture provenance.
+**Narration:**
 
-5. Only after capture succeeds, restart the public app with:
+> This plan is bound to live open-source DataHub context captured through the DataHub MCP Server:
+> six datasets, complete schemas, five lineage edges, ownership, sandbox metadata, and three
+> existing assertions. Incomplete, stale, foreign, or local-only context disables the run.
 
-   ```text
-   APP_ENV=hackathon
-   LINEAGE_FUZZER_CANDIDATE_SHA=<exact promoted commit>
-   LINEAGE_FUZZER_CONTEXT_FILE=.lineage-fuzzer/campaign-context.json
-   LINEAGE_FUZZER_INJECTION_ENABLED=true
-   ```
+### 0:42-1:00 — Preview the campaign and safety boundary
 
-   The container must mount only the allocated Lineage Fuzzer DuckDB fixture at the configured
-   path. Injection remains disabled until this restart; no fallback to local context is allowed.
+**Screen:** Point to the three fault cards: 100x unit scale, 45-day stale partition, and 10%
+customer-key null surge. Keep the graph visible.
 
-6. Verify `/api/readiness` is 200, `/api/demo/plan` reports
-   `context_source=datahub-mcp-live`, review its new approval digest, and invoke the single-flight
-   `/api/demo/run`.
-7. If isolation/reset evidence is required, record the foreign baseline first, run the exact reset
-   approval, confirm only allowlisted tombstones, reseed with the seed approval, recapture context,
-   and recheck the foreign baseline byte-for-byte.
-8. Roll back to the prior image/config if any gate fails. A reset or reseed always invalidates the
-   previous live context, so public execution stays disabled until a fresh capture succeeds.
+**Narration:**
 
-No expanded live seed/capture/campaign result is claimed by this project task.
+> One fixed seed creates three semantic faults against only the allowlisted DuckDB fixture.
+> DataHub lineage predicts which downstream tables should change, and the manifest digest is the
+> approval. Every fault restores before the next begins.
 
-## Evidence map
+### 1:00-1:08 — Approve once
 
-Each campaign writes under:
+**Screen:** Click **Approve + run campaign** once. Show the button change to
+**Running + restoring...**.
 
-```text
-<evidence-root>/m-<manifest-sha256[0:16]>-c-<context-sha256[0:16]>/
-```
+**Narration:**
 
-The directory contains:
+> I am approving this exact digest. Injection is default-deny, path- and namespace-bound, and
+> single-flight.
 
-| Path | Evidence |
+### 1:08-1:38 — Explain the work while it runs
+
+**Screen:** Stay on the live application while the campaign executes.
+
+**Narration:**
+
+> For each fault, Lineage Fuzzer snapshots the fixture, mutates deterministic rows, rebuilds the
+> downstream tables, compares observed checksums with the lineage prediction, runs the controls
+> captured from DataHub, and restores in a finally path. It then generates read-only SQL for the
+> measured gaps and repeats the identical campaign.
+
+If the result appears early, pause on the complete matrix rather than rushing ahead.
+
+### 1:38-2:11 — Show measured improvement and restoration
+
+**Screen:** The page scrolls to the result panel. Point, in order, to:
+
+1. **Baseline coverage: 33.3% — 1 of 3 faults detected**
+2. **Improved coverage: 100.0% — 3 of 3 faults detected**
+3. The three matrix rows, each with an improved detection and `EXACT`
+4. The generated artifact path and SHA-256
+5. **RESTORATION VERIFIED — all six table checksums match baseline**
+
+**Narration:**
+
+> The cataloged controls catch only the null surge: one out of three. The generated controls catch
+> the scale and staleness gaps, so the same seed reaches three out of three. Every observed blast
+> radius exactly matches the DataHub prediction, and all six table checksums return to baseline.
+
+### 2:11-2:31 — Show the runnable artifact
+
+**Screen:** Switch to the pre-opened public GitHub SQL file. Point to the two control IDs, the
+read-only `SELECT`, and the approved `raw.orders` table.
+
+**Narration:**
+
+> This is the generated artifact judges can inspect and run: one read-only SQL statement grounded
+> in the captured schema, validated on clean data, and executed against both missed faults. The
+> repository also includes the manifest and before-and-after coverage examples.
+
+### 2:31-2:44 — Close on restored proof
+
+**Screen:** Return to the app, keep the restoration line visible, then scroll to the separate
+live-proof card if timing allows.
+
+**Narration:**
+
+> The campaign evidence is immutable, the fixture is restored, and a separate approval-bound
+> custom-assertion transaction proves DataHub writeback, re-read, isolation, and restoration.
+> Lineage Fuzzer breaks data safely before bad data breaks production.
+
+Stop the recording by 2:55 even if there is unused narration.
+
+## If the live run does not complete
+
+- If the button is disabled, stop. Do not present local fixture mode as live evidence.
+- If the app reports a stale context or readiness error, stop and ask the coordinator to restore
+  the verified public state. Do not run catalog reset or seed operations during recording.
+- If the app reports that a campaign is already running, wait for that single flight to finish,
+  refresh, verify the live labels again, and start a new take.
+- If any campaign row shows `DIFF`, coverage is not 33.3% to 100%, or restoration is not verified,
+  stop the take. Preserve the failure for diagnosis; do not edit around it or substitute static
+  output.
+- If the run takes longer than the recording budget, capture a new continuous take after the
+  service is healthy. Do not speed up the result footage or imply that a cached file was a fresh
+  execution.
+
+## Final video check
+
+- [ ] Total duration is below 3:00; target is 2:45.
+- [ ] The application visibly functions on camera.
+- [ ] The public application and repository URLs are readable.
+- [ ] `datahub-mcp-live`, the current candidate, three faults, 33.3% to 100% coverage, three
+      `EXACT` results, generated SQL, and restoration are legible.
+- [ ] The narration distinguishes live DataHub context, isolated DuckDB mutations, and the
+      separate restored DataHub writeback proof.
+- [ ] No secret, private URL, receipt path, cloud console, terminal history, notification, or
+      unrelated project is visible.
+- [ ] Captions are corrected for DataHub, MCP, DuckDB, Lineage Fuzzer, and `proved_and_restored`.
+- [ ] The upload is public on YouTube, Vimeo, or Youku and plays without authentication.
+- [ ] The Devpost entry uses the final copy in `SUBMISSION.md`.
+
+## Repository evidence shown or linked
+
+| Evidence | Public path |
 |---|---|
-| `campaign-manifest.json` | seed, exact target, three faults, and predicted URNs |
-| `baseline-coverage.json` | DataHub-derived controls and baseline detection matrix |
-| `generated/lineage_fuzzer_generated_controls.sql` | immutable runnable read-only SQL |
-| `final-coverage.json` | baseline plus generated controls at full coverage |
-| `campaign-report.json` | approval, mutation hashes, blast comparison, replay digest, restoration |
+| Seeded campaign | [`examples/campaign-manifest.json`](../examples/campaign-manifest.json) |
+| Baseline 1/3 | [`examples/baseline-coverage.json`](../examples/baseline-coverage.json) |
+| Generated SQL | [`examples/generated/lineage_fuzzer_generated_controls.sql`](../examples/generated/lineage_fuzzer_generated_controls.sql) |
+| Improved 3/3 | [`examples/final-coverage.json`](../examples/final-coverage.json) |
+| Full restored report | [`examples/campaign-report.json`](../examples/campaign-report.json) |
 
-The full digests remain inside the manifest and report; the collision-resistant prefixes keep
-Windows paths portable. Byte-identical replays reuse those files. A differing replay fails
-closed instead of overwriting evidence.
-
-## Preserved live-proof baseline
-
-The earlier candidate `3f6adf08065852f4cd779b3565a979077dcab7be` completed the separate
-authenticated assertion write/result/re-read/restore proof with readiness 200 and unchanged
-foreign-project evidence. Its exact receipt and isolation hashes remain in
-`COORDINATOR_HANDOFF.md`. The UI labels this as a separate proof baseline, not as the current
-product candidate.
-
-## Honest boundaries
-
-- Only the exact allowlisted repository fixture is mutable; production databases are rejected.
-- Offline fixtures and mocks are never presented as live context.
-- The expanded catalog contract has comprehensive offline tests but awaits coordinator live
-  promotion.
-- Generated SQL cannot authorize mutation and must pass the deterministic read-only validator.
-- No secret, raw authorization header, or token is written to Git, receipts, snapshots, or logs.
+These committed examples are deterministic local evidence and are labeled
+`local-fixture-topology`. The public page's current campaign plan is separately bound to
+`datahub-mcp-live`; do not blur the two.

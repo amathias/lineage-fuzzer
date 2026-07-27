@@ -68,10 +68,17 @@ runs tests and Ruff, seeds and checks the fixture, and exercises the judge page 
 
 ## Submission
 
-**Title:** Lineage Fuzzer: Chaos Engineering for the Data Graph
+**Title:** Lineage Fuzzer
 
 **Tagline:** Break data safely before bad data breaks production.
 
-The previously completed live custom-assertion write/result/re-read/restore proof is preserved as
-separate coordinator evidence. This repository does not claim that the expanded six-entity
-campaign has been exercised live until the coordinator performs the documented promotion gate.
+**Live application:** [fuzzer.datahub-hackathon.aaronmathias.com](https://fuzzer.datahub-hackathon.aaronmathias.com)
+
+**Public repository:** [github.com/amathias/lineage-fuzzer](https://github.com/amathias/lineage-fuzzer)
+
+The deployed product candidate is live-seeded, live-captured, readiness-verified, and enabled for
+the approval-bound judge campaign. The complete expanded campaign and the separate DataHub custom
+assertion write/result/re-read/restore proof were coordinator-observed on compatible earlier
+candidates and remain distinct restored evidence. See [SUBMISSION.md](SUBMISSION.md) for the
+judge-ready Devpost copy and [docs/JUDGE_DEMO.md](docs/JUDGE_DEMO.md) for the exact recording
+runbook under three minutes.
