@@ -1,9 +1,34 @@
 # Lineage Fuzzer
 
+[Open the live judge console](https://fuzzer.datahub-hackathon.aaronmathias.com) ·
+[View the source](https://github.com/amathias/lineage-fuzzer) ·
+[Follow the under-three-minute recording runbook](docs/JUDGE_DEMO.md)
+
+Demo video: **pending recording and public upload**. The repository does not claim that a video
+exists yet.
+
 Lineage Fuzzer is a DataHub-powered semantic chaos agent for data reliability. It reads one exact
 six-dataset sandbox graph, predicts downstream impact, injects three deterministic faults into a
 disposable DuckDB fixture, measures which cataloged controls detect them, generates the missing
 read-only SQL tests, reruns the same campaign, and verifies complete restoration.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    D["DataHub lineage, schemas, owners, assertions"] --> P["Campaign planner"]
+    P --> A["Approval-bound fault plan"]
+    A --> F["Disposable DuckDB fault adapters"]
+    F --> M["Detection and blast-radius measurement"]
+    M --> G["Missing SQL-control generator"]
+    G --> R["Rerun, verify coverage, restore"]
+```
+
+## Three-step judge path
+
+1. Open the live console and inspect the exact sandbox graph plus predicted three-fault campaign.
+2. Approve and run the deterministic campaign, observing baseline detection coverage of 1/3.
+3. Inspect the generated read-only SQL controls, rerun to 3/3 coverage, and verify full restoration.
 
 The judge flow demonstrates:
 
