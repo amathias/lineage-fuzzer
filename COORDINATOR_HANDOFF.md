@@ -1,5 +1,23 @@
 # Coordinator Handoff: Lineage Fuzzer
 
+## 2026-07-29 public-demo boundary closeout
+
+| Field | Verified value |
+|---|---|
+| Exact deployed product | `afb62abcbb5ec5a141f23f42a8755d75ec2c549d` |
+| Public endpoint | `https://fuzzer.datahub-hackathon.aaronmathias.com` |
+| Public acceptance | Root, health, and strong readiness returned 200 |
+| Browser acceptance | One prominent `PUBLIC DEMO` notice rendered above the workflow and identified the disposable DuckDB fixture, `fuzzer.*` topology, single-flight restoration contract, and source/API/self-hosting link |
+| Hosted API documentation | `/docs`, `/redoc`, and `/openapi.json` returned 404 in hackathon mode; local/development/test documentation remains enabled |
+| Verification | 123 tests passed, Ruff passed, GitHub Actions passed, and exact `main` matched `origin/main` before promotion |
+| Current live context | Read-only recapture verified 6 entities, 5 lineage edges, and 3 assertion payloads; context SHA-256 `3ea7094e773a6c2d6370660d0c0a8a55eb058c0fa39ab3b8af8b94cbff1b930f` |
+| Current judge plan | `context_source=datahub-mcp-live`, `run_enabled=true`, approval SHA-256 `9764eea55cde76eb9a9b31510bebda95030a32d57795c3cbac0cf8fee56c092d` |
+
+Because a live context receipt is intentionally bound to the exact deployed candidate, the UI-only
+commit correctly invalidated the earlier receipt. The coordinator retained timestamped local
+backups, reran only the documented read-only context capture, restarted the service, and verified
+the exact new candidate in the browser. No DataHub catalog seed, write, or reset occurred.
+
 ## Current handoff
 
 | Field | Value |
