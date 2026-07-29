@@ -45,6 +45,9 @@ def test_judge_page_and_plan_expose_the_fixed_campaign() -> None:
 
     assert page.status_code == 200
     assert "Lineage Fuzzer" in page.text
+    assert "PUBLIC DEMO" in page.text
+    assert "fuzzer.*" in page.text
+    assert "No production or personal data" in page.text
     assert plan.status_code == 200
     payload = plan.json()
     assert payload["approval_sha256"] == runner.manifest.sha256
@@ -57,6 +60,15 @@ def test_judge_page_and_plan_expose_the_fixed_campaign() -> None:
     assert len(payload["graph"]["nodes"]) == 6
     assert len(payload["graph"]["edges"]) == 5
     assert payload["run_enabled"] is False
+
+
+def test_interactive_docs_are_disabled_for_the_public_demo() -> None:
+    local = TestClient(create_app(settings=Settings(APP_ENV="test")))
+    hosted = TestClient(create_app(settings=Settings(APP_ENV="hackathon")))
+
+    assert local.get("/docs").status_code == 200
+    assert hosted.get("/docs").status_code == 404
+    assert hosted.get("/openapi.json").status_code == 404
 
 
 def test_judge_run_passes_the_exact_approved_digest() -> None:

@@ -54,10 +54,18 @@ def create_app(
     campaign_runner: CampaignProvider | None = None,
 ) -> FastAPI:
     resolved_settings = settings or Settings()
+    docs_enabled = resolved_settings.environment.casefold() in {
+        "development",
+        "local",
+        "test",
+    }
     app = FastAPI(
         title="Lineage Fuzzer",
         version=__version__,
         description="Safe, deterministic semantic data fault campaigns powered by DataHub.",
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
     )
     app.state.readiness_service = readiness_service or ReadinessService(
         resolved_settings,

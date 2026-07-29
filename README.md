@@ -58,6 +58,13 @@ cannot become live evidence by changing a source label.
 
 ## Local verification
 
+### API documentation
+
+Local, development, and test runs expose Swagger, ReDoc, and the generated OpenAPI document at
+`/docs`, `/redoc`, and `/openapi.json`. The unauthenticated public judge deployment disables those
+interactive routes. This public repository, its request/response models, tests, and local OpenAPI
+output remain the complete integration and self-hosting reference.
+
 ```powershell
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -e ".[dev,datahub]"
