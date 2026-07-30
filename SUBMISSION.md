@@ -12,11 +12,13 @@ generate missing read-only SQL tests, and prove complete restoration.
 
 **Primary challenge:** Metadata-Aware Code Generation & Development
 
-**Additional category fit:** Agents That Do Real Work
+**Devpost selection:** Metadata-Aware Code Generation & Development only
 
 **Try the application:** [fuzzer.datahub-hackathon.aaronmathias.com](https://fuzzer.datahub-hackathon.aaronmathias.com)
 
 **Public source:** [github.com/amathias/lineage-fuzzer](https://github.com/amathias/lineage-fuzzer)
+
+**Public demo video:** [youtu.be/wcDgAAUbO08](https://youtu.be/wcDgAAUbO08) (2:04, English captions)
 
 **License:** Apache License 2.0
 
