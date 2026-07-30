@@ -1,5 +1,15 @@
 # Coordinator Handoff: Lineage Fuzzer
 
+## 2026-07-29 shadow-module cleanup — pending deployment
+
+- Removed the four unreachable module files shadowed by the canonical `api`, `cli`, `config`, and
+  `datahub.mcp` packages.
+- Import-resolution checks still select the package implementations used by the application.
+- Verification: 123 tests passed, Ruff passed, secret scanning passed, and whitespace checks
+  passed.
+- The change removes 281 divergent dead lines and does not alter runtime behavior, dependencies,
+  ports, DataHub namespace, or deployment topology.
+
 ## 2026-07-29 public-demo boundary closeout
 
 | Field | Verified value |

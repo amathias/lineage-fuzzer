@@ -1,5 +1,7 @@
 # Lineage Fuzzer
 
+[![CI](https://github.com/amathias/lineage-fuzzer/actions/workflows/ci.yml/badge.svg)](https://github.com/amathias/lineage-fuzzer/actions/workflows/ci.yml)
+
 [Open the live judge console](https://fuzzer.datahub-hackathon.aaronmathias.com) ·
 [View the source](https://github.com/amathias/lineage-fuzzer) ·
 [Follow the under-three-minute recording runbook](docs/JUDGE_DEMO.md)
@@ -11,6 +13,11 @@ Lineage Fuzzer is a DataHub-powered semantic chaos agent for data reliability. I
 six-dataset sandbox graph, predicts downstream impact, injects three deterministic faults into a
 disposable DuckDB fixture, measures which cataloged controls detect them, generates the missing
 read-only SQL tests, reruns the same campaign, and verifies complete restoration.
+
+![Lineage Fuzzer console showing baseline coverage improving from one of three to three of three faults detected](docs/assets/judge-console.png)
+
+_The same captured topology and fault manifest improve from 33.3% to 100% detection coverage, then
+all six fixture-table checksums prove restoration._
 
 ## Architecture
 
@@ -107,6 +114,8 @@ runs tests and Ruff, seeds and checks the fixture, and exercises the judge page 
 **Live application:** [fuzzer.datahub-hackathon.aaronmathias.com](https://fuzzer.datahub-hackathon.aaronmathias.com)
 
 **Public repository:** [github.com/amathias/lineage-fuzzer](https://github.com/amathias/lineage-fuzzer)
+
+**Primary category:** Metadata-Aware Code Generation & Development
 
 The deployed product candidate is live-seeded, live-captured, readiness-verified, and enabled for
 the approval-bound judge campaign. The complete expanded campaign and the separate DataHub custom

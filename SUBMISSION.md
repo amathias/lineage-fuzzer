@@ -10,9 +10,9 @@
 assertions to plan reproducible semantic fault campaigns, measure which controls detect them,
 generate missing read-only SQL tests, and prove complete restoration.
 
-**Primary challenge:** Agents That Do Real Work
+**Primary challenge:** Metadata-Aware Code Generation & Development
 
-**Additional category fit:** Metadata-Aware Code Generation & Development
+**Additional category fit:** Agents That Do Real Work
 
 **Try the application:** [fuzzer.datahub-hackathon.aaronmathias.com](https://fuzzer.datahub-hackathon.aaronmathias.com)
 
