@@ -1,6 +1,6 @@
 # Coordinator Handoff: Lineage Fuzzer
 
-## 2026-07-29 shadow-module cleanup — pending deployment
+## 2026-07-29 shadow-module cleanup — deployed and verified
 
 - Removed the four unreachable module files shadowed by the canonical `api`, `cli`, `config`, and
   `datahub.mcp` packages.
@@ -9,6 +9,14 @@
   passed.
 - The change removes 281 divergent dead lines and does not alter runtime behavior, dependencies,
   ports, DataHub namespace, or deployment topology.
+- Exact commit `5ca3c010d57d542bc66f78b6dad67d9ee2bec350` passed GitHub Actions and was
+  promoted by the coordinator.
+- The candidate-bound live-context receipt correctly failed closed after promotion. The
+  coordinator backed up the prior files and ran the documented read-only recapture: six entities,
+  five lineage edges, and three assertion payloads produced context SHA-256
+  `3382b372f4ec39c412cd35bc5f04bf1aabeced1aee12a3c36d3f454b69bc10f3`.
+  Root, health, and readiness then returned 200; the judge plan is enabled with approval SHA-256
+  `d48de523069341cdf5ca58f4672272aa005722ceef15c629c7bc06cbdad862f1`.
 
 ## 2026-07-29 public-demo boundary closeout
 
