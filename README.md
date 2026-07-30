@@ -11,8 +11,9 @@ Demo video: **[public on YouTube](https://youtu.be/wcDgAAUbO08)** (2:04, English
 
 Lineage Fuzzer is a DataHub-powered semantic chaos agent for data reliability. It reads one exact
 six-dataset sandbox graph, predicts downstream impact, injects three deterministic faults into a
-disposable DuckDB fixture, measures which cataloged controls detect them, generates the missing
-read-only SQL tests, reruns the same campaign, and verifies complete restoration.
+disposable DuckDB fixture, measures which cataloged controls detect them, emits two predesigned
+read-only SQL controls for the measured gaps, reruns the same campaign, and verifies complete
+restoration.
 
 ![Lineage Fuzzer console showing baseline coverage improving from one of three to three of three faults detected](docs/assets/judge-console.png)
 
@@ -27,7 +28,7 @@ flowchart LR
     P --> A["Approval-bound fault plan"]
     A --> F["Disposable DuckDB fault adapters"]
     F --> M["Detection and blast-radius measurement"]
-    M --> G["Missing SQL-control generator"]
+    M --> G["Deterministic SQL-control builder"]
     G --> R["Rerun, verify coverage, restore"]
 ```
 
@@ -35,7 +36,7 @@ flowchart LR
 
 1. Open the live console and inspect the exact sandbox graph plus predicted three-fault campaign.
 2. Approve and run the deterministic campaign, observing baseline detection coverage of 1/3.
-3. Inspect the generated read-only SQL controls, rerun to 3/3 coverage, and verify full restoration.
+3. Inspect the emitted read-only SQL controls, rerun to 3/3 coverage, and verify full restoration.
 
 The judge flow demonstrates:
 
@@ -45,7 +46,7 @@ The judge flow demonstrates:
 - numeric-scale, partition-staleness, and null-density fault adapters;
 - predicted-versus-observed checksum blast radius;
 - baseline coverage of 1/3 and improved coverage of 3/3;
-- a generated, validated, runnable SQL artifact;
+- an emitted, validated, runnable SQL artifact;
 - restoration between every fault and after the campaign; and
 - immutable evidence keyed by both manifest and context digests.
 
@@ -117,9 +118,8 @@ runs tests and Ruff, seeds and checks the fixture, and exercises the judge page 
 
 **Primary category:** Metadata-Aware Code Generation & Development
 
-The deployed product candidate is live-seeded, live-captured, readiness-verified, and enabled for
-the approval-bound judge campaign. The complete expanded campaign and the separate DataHub custom
-assertion write/result/re-read/restore proof were coordinator-observed on compatible earlier
-candidates and remain distinct restored evidence. See [SUBMISSION.md](SUBMISSION.md) for the
-judge-ready Devpost copy and [docs/JUDGE_DEMO.md](docs/JUDGE_DEMO.md) for the exact recording
-runbook under three minutes.
+The public application has current live DataHub context and is enabled for the approval-bound judge
+campaign. A complete campaign separately proved 1/3 to 3/3 coverage and full restoration; a
+distinct reversible custom-assertion exercise proved the supported DataHub write path. See
+[SUBMISSION.md](SUBMISSION.md) for judge-ready Devpost copy and
+[docs/JUDGE_DEMO.md](docs/JUDGE_DEMO.md) for the recording runbook.

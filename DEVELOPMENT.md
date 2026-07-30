@@ -60,8 +60,8 @@ $env:LINEAGE_FUZZER_INJECTION_ENABLED = "true"
 ```
 
 The runner restores between faults and in a final cleanup, validates observed downstream table
-checksums against the fault-specific predicted URNs, executes the generated read-only SQL, and
-fails unless coverage moves from exactly 1/3 to 3/3.
+checksums against the fault-specific predicted URNs, executes the emitted read-only SQL artifact,
+and fails unless coverage moves from exactly 1/3 to 3/3.
 
 ## Authenticated campaign context
 

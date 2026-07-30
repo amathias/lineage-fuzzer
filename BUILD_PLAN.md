@@ -4,7 +4,9 @@
 
 Build a fully reproducible campaign before adding more fault types. The critical proof is:
 
-> DataHub context selects meaningful faults, the system injects them only into an isolated fixture, existing controls miss some, generated controls execute, and the identical rerun improves coverage.
+> DataHub context constrains a meaningful fault campaign, the system injects faults only into an
+> isolated fixture, existing controls miss two, emitted deterministic controls execute, and the
+> identical rerun improves coverage.
 
 ## Recommended repository shape
 
@@ -13,9 +15,9 @@ Build a fully reproducible campaign before adding more fault types. The critical
   app/                  # API, planning, campaign state
   web/                  # graph, campaign, coverage UI
   faults/               # safe seeded fault adapters
-  generators/           # assertion/test generation and validation
+  generators/           # deterministic control emission and validation
   demo/                 # disposable pipeline and DataHub ingestion
-  examples/             # manifests, generated tests, reports
+  examples/             # manifests, emitted controls, reports
   tests/
   docs/
   docker-compose.yml
@@ -45,7 +47,7 @@ Exit condition: the clean pipeline and baseline controls pass, and restore retur
 
 ## Phase 2: Campaign model and fault library
 
-- Define campaign, fault specification, execution result, detection, generated control, and coverage schemas.
+- Define campaign, fault specification, execution result, detection, emitted control, and coverage schemas.
 - Implement seeded unit-scale, stale-partition, and join/null faults.
 - Capture before/after evidence.
 - Predict blast radius from DataHub lineage.
@@ -63,15 +65,15 @@ Exit condition: all three faults reproduce exactly from a manifest.
 
 Exit condition: the baseline campaign produces a stable, truthful score.
 
-## Phase 4: Generate and execute missing controls
+## Phase 4: Emit and execute missing controls
 
-- Use metadata-grounded templates and optionally an LLM to draft tests.
-- Parse generated SQL and enforce read-only/sandbox constraints.
-- Execute generated tests against clean and faulty fixtures.
+- Emit the two predesigned deterministic controls for the measured gaps.
+- Parse the emitted SQL and enforce read-only/sandbox constraints.
+- Execute the emitted controls against clean and faulty fixtures.
 - Save runnable examples under `examples/generated/`.
 - Rerun the identical campaign.
 
-Exit condition: generated controls pass clean data and detect their intended faults.
+Exit condition: emitted controls pass clean data and detect their intended faults.
 
 ## Phase 5: DataHub writeback and UI
 
@@ -83,7 +85,7 @@ Required UI:
 2. Campaign manifest and predicted blast radius.
 3. Safety approval.
 4. Live fault/control matrix.
-5. Generated test diff.
+5. Emitted control artifact.
 6. Before/after coverage.
 7. Restoration proof and DataHub update.
 
@@ -107,13 +109,13 @@ Exit condition: entire demo is operable from the UI after setup.
 - Campaign schemas and manifests.
 - Blast-radius traversal.
 - Detection matrix and score.
-- Generated code policy validation.
+- Emitted SQL policy validation.
 
 ### Integration
 
 - DataHub read/write.
 - Snapshot/inject/run/restore per fault.
-- Generated test on clean and faulty data.
+- Emitted controls on clean and faulty data.
 - Failure during campaign still restores.
 
 ### End to end
@@ -122,7 +124,7 @@ Exit condition: entire demo is operable from the UI after setup.
 - Generate campaign.
 - Approve and run.
 - Observe baseline gap.
-- Generate controls.
+- Emit controls.
 - Rerun same seed.
 - Verify improved coverage and restoration.
 - Confirm DataHub update.
@@ -137,7 +139,8 @@ Cut in this order:
 4. More than three faults.
 5. Multiple pipeline engines.
 
-Never cut sandbox enforcement, automatic restoration, real generated-test execution, repeatable scoring, or DataHub writeback.
+Never cut sandbox enforcement, automatic restoration, real emitted-control execution, repeatable
+scoring, or the separate DataHub writeback proof.
 
 ## Evidence to preserve
 
@@ -145,7 +148,7 @@ Never cut sandbox enforcement, automatic restoration, real generated-test execut
 - Campaign manifest and seed.
 - Before/after fault evidence.
 - Detection matrix.
-- Generated test diff and execution.
+- Emitted control artifact and execution.
 - Coverage delta.
 - Restore checksum.
 - DataHub before/after screenshot.
@@ -155,7 +158,7 @@ Never cut sandbox enforcement, automatic restoration, real generated-test execut
 - [ ] No production target path exists.
 - [ ] Seeds make all campaigns reproducible.
 - [ ] Restore executes on success and failure.
-- [ ] Generated code is parsed and sandboxed.
+- [ ] Emitted SQL is parsed and sandboxed.
 - [ ] Raw detection matrix accompanies any composite score.
 - [ ] Clean-checkout setup and reset are tested.
 - [ ] CI covers safety, restoration, and scoring.

@@ -6,7 +6,7 @@ The recording uses only the public Lineage Fuzzer application and public reposit
 
 - [Live judge application](https://fuzzer.datahub-hackathon.aaronmathias.com)
 - [Public source repository](https://github.com/amathias/lineage-fuzzer)
-- [Generated runnable SQL](https://github.com/amathias/lineage-fuzzer/blob/main/examples/generated/lineage_fuzzer_generated_controls.sql)
+- [Emitted runnable SQL](https://github.com/amathias/lineage-fuzzer/blob/main/examples/generated/lineage_fuzzer_generated_controls.sql)
 
 ## Claims the recording must keep separate
 
@@ -14,11 +14,8 @@ The recording uses only the public Lineage Fuzzer application and public reposit
   supported GraphQL reads.
 - The three fault mutations run only against the disposable Lineage Fuzzer DuckDB fixture. They
   do not mutate DataHub datasets or a production warehouse.
-- A complete expanded live campaign returned `proved_and_restored` on compatible product
-  candidate `472d4d850c9b6e34529eddb0507a4e015987d33f`.
-- The currently deployed candidate
-  `92db02471a6bdb517be2db934a146b71509fe442` subsequently completed approval-bound reset
-  recovery, unchanged reseed, fresh live capture, readiness 200, and an enabled live plan.
+- A complete expanded campaign returned `proved_and_restored`; current public-environment
+  verification also established fresh live capture, readiness 200, and an enabled live plan.
 - The “Separate live-proof baseline” card refers to an earlier, separately restored DataHub
   custom-assertion write/result/re-read proof. Do not describe it as the current campaign's
   writeback.
@@ -36,8 +33,6 @@ One sentence that captures the boundary cleanly:
 - [ ] Open the [live judge application](https://fuzzer.datahub-hackathon.aaronmathias.com).
 - [ ] Confirm the toolbar says **Current live DataHub context verified**.
 - [ ] Confirm the footer says `Context source: datahub-mcp-live`.
-- [ ] Confirm the footer shows candidate
-      `92db02471a6bdb517be2db934a146b71509fe442`.
 - [ ] Confirm **Approve + run campaign** is enabled.
 - [ ] Confirm the graph and all three fault cards render.
 - [ ] Do not record if the page reports local context, readiness failure, disabled injection, a
@@ -48,7 +43,7 @@ One sentence that captures the boundary cleanly:
 - [ ] Use a 1920x1080 or larger capture and browser zoom that keeps the graph, fault cards, and
       result matrix legible.
 - [ ] Pre-open the live application in the first tab and the
-      [generated SQL file](https://github.com/amathias/lineage-fuzzer/blob/main/examples/generated/lineage_fuzzer_generated_controls.sql)
+      [emitted SQL file](https://github.com/amathias/lineage-fuzzer/blob/main/examples/generated/lineage_fuzzer_generated_controls.sql)
       in the second.
 - [ ] Hide bookmarks containing private links, close terminals and cloud consoles, disable
       notifications, and use a clean browser profile.
@@ -118,8 +113,8 @@ customer-key null surge. Keep the graph visible.
 
 > For each fault, Lineage Fuzzer snapshots the fixture, mutates deterministic rows, rebuilds the
 > downstream tables, compares observed checksums with the lineage prediction, runs the controls
-> captured from DataHub, and restores in a finally path. It then generates read-only SQL for the
-> measured gaps and repeats the identical campaign.
+> captured from DataHub, and restores in a finally path. It then selects two predesigned read-only
+> SQL controls for the measured gaps and repeats the identical campaign.
 
 If the result appears early, pause on the complete matrix rather than rushing ahead.
 
@@ -130,12 +125,12 @@ If the result appears early, pause on the complete matrix rather than rushing ah
 1. **Baseline coverage: 33.3% — 1 of 3 faults detected**
 2. **Improved coverage: 100.0% — 3 of 3 faults detected**
 3. The three matrix rows, each with an improved detection and `EXACT`
-4. The generated artifact path and SHA-256
+4. The emitted SQL artifact path
 5. **RESTORATION VERIFIED — all six table checksums match baseline**
 
 **Narration:**
 
-> The cataloged controls catch only the null surge: one out of three. The generated controls catch
+> The cataloged controls catch only the null surge: one out of three. The emitted controls catch
 > the scale and staleness gaps, so the same seed reaches three out of three. Every observed blast
 > radius exactly matches the DataHub prediction, and all six table checksums return to baseline.
 
@@ -146,9 +141,9 @@ read-only `SELECT`, and the approved `raw.orders` table.
 
 **Narration:**
 
-> This is the generated artifact judges can inspect and run: one read-only SQL statement grounded
-> in the captured schema, validated on clean data, and executed against both missed faults. The
-> repository also includes the manifest and before-and-after coverage examples.
+> This is the emitted artifact judges can inspect and run: two predesigned read-only SQL controls
+> validated on clean data and executed against the two missed faults. The repository also includes
+> the manifest and before-and-after coverage examples.
 
 ### 2:31-2:44 — Close on restored proof
 
@@ -182,8 +177,8 @@ Stop the recording by 2:55 even if there is unused narration.
 - [ ] Total duration is below 3:00; target is 2:45.
 - [ ] The application visibly functions on camera.
 - [ ] The public application and repository URLs are readable.
-- [ ] `datahub-mcp-live`, the current candidate, three faults, 33.3% to 100% coverage, three
-      `EXACT` results, generated SQL, and restoration are legible.
+- [ ] `datahub-mcp-live`, three faults, 33.3% to 100% coverage, three `EXACT` results, emitted SQL,
+      and restoration are legible.
 - [ ] The narration distinguishes live DataHub context, isolated DuckDB mutations, and the
       separate restored DataHub writeback proof.
 - [ ] No secret, private URL, receipt path, cloud console, terminal history, notification, or
@@ -198,10 +193,10 @@ Stop the recording by 2:55 even if there is unused narration.
 |---|---|
 | Seeded campaign | [`examples/campaign-manifest.json`](../examples/campaign-manifest.json) |
 | Baseline 1/3 | [`examples/baseline-coverage.json`](../examples/baseline-coverage.json) |
-| Generated SQL | [`examples/generated/lineage_fuzzer_generated_controls.sql`](../examples/generated/lineage_fuzzer_generated_controls.sql) |
+| Emitted SQL | [`examples/generated/lineage_fuzzer_generated_controls.sql`](../examples/generated/lineage_fuzzer_generated_controls.sql) |
 | Improved 3/3 | [`examples/final-coverage.json`](../examples/final-coverage.json) |
 | Full restored report | [`examples/campaign-report.json`](../examples/campaign-report.json) |
 
-These committed examples are deterministic local evidence and are labeled
+These repository examples are deterministic local evidence and are labeled
 `local-fixture-topology`. The public page's current campaign plan is separately bound to
 `datahub-mcp-live`; do not blur the two.

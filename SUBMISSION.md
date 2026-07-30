@@ -8,7 +8,8 @@
 
 **Short description:** Lineage Fuzzer uses live DataHub lineage, schemas, ownership, and
 assertions to plan reproducible semantic fault campaigns, measure which controls detect them,
-generate missing read-only SQL tests, and prove complete restoration.
+emit validated read-only SQL controls for two designed coverage gaps, and prove complete
+restoration.
 
 **Primary challenge:** Metadata-Aware Code Generation & Development
 
@@ -46,11 +47,12 @@ Lineage Fuzzer runs one deterministic, approval-bound campaign:
    a 100x amount-scale change, a 45-day stale partition, and a 10% customer-key null surge.
 5. It compares predicted versus observed changed-table checksums and measures the controls
    actually captured from DataHub.
-6. The baseline detects 1 of 3 faults. The agent generates a validated, runnable, read-only SQL
-   artifact for the two gaps, executes it, and reruns the identical seeded campaign.
+6. The baseline detects 1 of 3 faults. The agent packages two predesigned, validated, runnable,
+   read-only SQL controls for the measured gaps, executes them, and reruns the identical seeded
+   campaign.
 7. Coverage improves from 33.3% to 100%, every predicted blast radius matches the observed
    effects, and all six fixture checksums return to baseline.
-8. The manifest, context digest, matrices, generated SQL, replay digest, and restoration proof
+8. The manifest, context digest, matrices, emitted SQL, replay digest, and restoration proof
    are stored as immutable evidence.
 
 The result is deliberately narrower and more useful than a generic “AI data tester”: it proves
@@ -73,9 +75,9 @@ DataHub is the campaign's source of truth, not a decorative catalog lookup.
 - A separate live proof used the supported assertion APIs to create and activate one custom
   assertion, report a fixed result, re-read it, and restore it by verified soft deletion.
 
-The live snapshot is bound to the deployed commit, verified catalog state, DataHub tool schemas,
-raw-response digests, and current fixture checksums. In hackathon mode, stale or incomplete
-context makes readiness fail and disables the public Run button.
+The live snapshot is bound to verified catalog state, DataHub tool schemas, raw-response digests,
+and current fixture checksums. In hackathon mode, stale or incomplete context makes readiness fail
+and disables the public Run button.
 
 ## Architecture
 
@@ -88,7 +90,7 @@ context makes readiness fail and disables the public Run button.
 | Safety gate | Default-deny checks for environment, platform, path, URN prefix, identity, tags, marker, and manifest approval |
 | DuckDB fault adapters | Reproducible numeric-scale, partition-staleness, and null-density mutations against one disposable fixture |
 | Observer and scorer | Table-checksum blast comparison and fault-by-control coverage matrix |
-| SQL generator and validator | One read-only, single-statement artifact restricted to the approved fixture table |
+| SQL control builder and validator | Two deterministic read-only controls restricted to the approved fixture table |
 | Evidence store | Immutable manifest/context-digest run directories; byte-different replays cannot overwrite evidence |
 | FastAPI judge UI | Live-context gate, graph and fault plan, single-flight execution, before/after coverage, artifact hash, and restoration result |
 
@@ -108,7 +110,8 @@ Safety is part of the product:
 - Only one campaign can run at a time.
 - Every fault restores in a `finally` path, restoration is checked after each fault, and the
   campaign succeeds only if the final six-table checksums match the baseline.
-- Generated SQL must be one read-only statement and may reference only the approved table.
+- The emitted SQL artifact must be one read-only statement and may reference only the approved
+  table.
 - Catalog reset is an exact allowlist, never a search delete or global cleanup.
 
 Production databases and unmarked assets are rejected. The campaign never injects faulty rows
@@ -162,11 +165,12 @@ Every fault is deterministic and reversible, but that is not enough. I bound the
 DataHub metadata, a physical path allowlist, a manifest approval, single-flight execution, and
 checksum verification. Evidence is content-addressed so a rerun cannot rewrite history.
 
-### Generating code that can be trusted
+### Emitting control code that can be trusted
 
-The generated controls are grounded in captured schema and measured gaps. They must parse as one
-read-only statement, avoid forbidden operations, reference only the approved table, pass against
-clean data, and then detect the intended fault before they count toward improved coverage.
+The current MVP deliberately uses two predesigned deterministic controls for the amount-scale and
+staleness gaps rather than free-form synthesis. Each control is selected only after the gap is
+measured, must parse as one read-only statement, may reference only the approved table, must pass
+against clean data, and must detect its intended fault before it counts toward improved coverage.
 
 ## Accomplishments
 
@@ -174,7 +178,7 @@ clean data, and then detect the intended fault before they count toward improved
   and persistent baseline assertions.
 - Implemented three genuinely different, seeded semantic fault adapters.
 - Matched predicted and observed blast radius for every fault.
-- Measured an honest baseline of 1/3 and proved 3/3 with generated executable SQL.
+- Measured an honest baseline of 1/3 and proved 3/3 with emitted executable SQL controls.
 - Restored the fixture between every fault and verified all six final table checksums.
 - Preserved immutable replay evidence and rejected byte-different overwrites.
 - Proved a bounded DataHub assertion write/result/re-read/restore transaction without changing
@@ -197,26 +201,19 @@ change.
 - Add more adapters, including duplicate keys, schema drift, and referential-integrity breaks.
 - Use column-level lineage and criticality to rank a larger set of candidate campaigns.
 - Emit merge-ready dbt tests alongside the standalone SQL artifact.
-- Add a review workflow so generated controls can become governed DataHub assertions after human
-  approval.
+- Add dynamic, metadata-grounded control synthesis and a review workflow for promoting approved
+  controls into governed DataHub assertions.
 - Generalize the strict fixture contract into reusable per-team sandbox policies without
   weakening the default-deny boundary.
 
 ## Verified evidence boundary
 
-The public deployment currently runs exact product commit
-`92db02471a6bdb517be2db934a146b71509fe442`. On that commit, the coordinator verified the
-approval-bound zero-write reset recovery, unchanged catalog reseed, a fresh live capture of six
-entities, five edges, and three assertion payloads, sibling-project isolation, readiness 200, and
-a plan reporting `context_source=datahub-mcp-live` with `run_enabled=true`.
-
-The complete expanded live campaign was coordinator-observed on compatible predecessor
-`472d4d850c9b6e34529eddb0507a4e015987d33f` and returned `proved_and_restored`. The reset verifier
-correction in the current commit did not change campaign semantics. The separate custom-assertion
-write/result/re-read/restore proof was completed on
-`3f6adf08065852f4cd779b3565a979077dcab7be`, with the assertion removed afterward and foreign
-project evidence unchanged. These are preserved as distinct proofs; this submission does not
-pretend that every proof was rerun on one commit.
+Public-environment verification captured six entities, five lineage edges, three baseline
+assertions, sibling-project isolation, readiness 200, and a plan reporting live DataHub MCP context
+with execution enabled. A complete campaign separately proved 1/3 baseline coverage, 3/3 coverage
+with the two emitted controls, and full fixture restoration. A separate reversible assertion
+write/result/reread/restore exercise proved the supported DataHub write path and removed the test
+assertion afterward. These are distinct evidence boundaries and are not presented as one execution.
 
 Fault mutations occur only in the isolated DuckDB fixture. DataHub receives only the separately
 approved catalog and assertion operations described above. No production target, credential,

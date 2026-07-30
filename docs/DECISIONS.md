@@ -6,9 +6,9 @@
 - **Date:** 2026-07-24
 
 Campaign manifests, safety decisions, fault injection, detection attribution, scoring, and
-restoration are deterministic application code. A language model may draft explanations or
-candidate controls, but generated code must pass deterministic validation before execution.
-A metadata-grounded template generator remains available when no model is configured.
+restoration are deterministic application code. The MVP emits two predesigned controls and does
+not use a language model. Future model-drafted controls would still have to pass the same
+deterministic validation before execution.
 
 This keeps campaigns replayable and prevents model output from bypassing safety controls.
 
@@ -30,7 +30,7 @@ DuckDB keeps the demo fast and deterministic while making the safety boundary ea
 
 The app uses the self-hosted DataHub MCP endpoint for entity, lineage, and schema context. It uses
 DataHub's supported custom-assertion GraphQL operations to retrieve existing controls, register
-generated controls, and report campaign results.
+one separately approved proof assertion, report a fixed result, reread it, and remove it.
 
 The application includes a live probe that fails if the required MCP tools are unavailable. Tests
 may mock transport behavior, but demo evidence must come from a running open-source DataHub
@@ -113,13 +113,13 @@ final cleanup path.
 This makes detection attribution and blast-radius comparison reproducible while preventing
 cross-fault contamination.
 
-## ADR-009: Generated controls use a strict read-only SQL policy
+## ADR-009: Emitted controls use a strict read-only SQL policy
 
 - **Status:** Accepted
 - **Date:** 2026-07-25
 
-The initial generator is deterministic and schema/gap-grounded. It emits one DuckDB SQL artifact
-with the missing amount-range and partition-freshness controls. Before execution, the validator
+The MVP builder deterministically emits one DuckDB SQL artifact containing two predesigned controls
+for the measured amount-range and partition-freshness gaps. Before execution, the validator
 requires a single read-only statement, only the approved `raw.orders` relation, and the expected
 control IDs. Mutation, attachment, file access, installation, pragma, and multi-statement forms are
 denied.
@@ -173,7 +173,7 @@ state change, or fixture drift invalidates the context. The app does not silentl
 topology, and the judge page keeps its run control disabled until the live gate and the explicit
 injection flag both pass.
 
-Campaign JSON evidence and a copy of the generated SQL artifact are stored under a directory
+Campaign JSON evidence and a copy of the emitted SQL artifact are stored under a directory
 named with both the manifest and context SHA-256 values. Replays may reuse only byte-identical
 files; a differing byte raises an error rather than overwriting evidence. Approval time is bound
 to the deterministic manifest time so a true replay remains byte-identical.

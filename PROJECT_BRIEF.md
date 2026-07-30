@@ -34,20 +34,22 @@ Ingest lineage, schemas, owners, and existing assertions into DataHub. Mark all 
 - create a stale partition;
 - break a join key or cause a null surge.
 
-Measure detection, generate missing tests, rerun, and reach full coverage.
+Measure detection, emit the MVP's two predesigned controls for the measured gaps, rerun, and reach
+full coverage.
 
 ## Core user journey
 
 1. Reliability engineer selects a target or asks for a high-value campaign.
-2. Agent reads DataHub lineage, schemas, ownership, criticality, and assertions.
-3. Campaign planner ranks candidate faults by impact and current control coverage.
+2. Agent reads DataHub lineage, schemas, ownership, governance markers, and assertions.
+3. Campaign planner validates the configured sandbox target and predicts blast radius.
 4. Safety gate confirms every target is an isolated disposable fixture.
 5. Agent presents a manifest with predicted blast radius and restore procedure.
 6. User approves the campaign.
 7. Injector applies seeded faults and runs the normal pipeline.
 8. Observer records which controls fired and compares predicted versus observed impact.
-9. Agent generates missing assertions or dbt/SQL tests.
-10. Validator checks generated artifacts, executes them, reruns the campaign, and records the improved score in DataHub.
+9. Agent selects and emits the two predesigned SQL controls for the measured gaps.
+10. Validator checks the emitted artifact, executes it, and reruns the campaign. A separate
+    reversible assertion exercise proves the supported DataHub write path.
 11. Restorer proves the fixture returned to baseline.
 
 ## Functional requirements
@@ -55,7 +57,7 @@ Measure detection, generate missing tests, rerun, and reach full coverage.
 ### Context and campaign planning
 
 - Query DataHub for lineage, schema fields and types, owners, domains, tags, and existing assertions.
-- Rank target assets using downstream blast radius and declared criticality.
+- Validate the exact target and predict its downstream blast radius.
 - Detect obvious assertion gaps.
 - Produce a versioned, seeded campaign manifest.
 - Include expected effect, affected URNs, detection expectation, time budget, and restore action for each fault.
@@ -89,13 +91,13 @@ Each fault must:
 - Compare predicted and observed blast radius.
 - Explain false negatives and false positives.
 
-### Test generation
+### Control emission
 
-- Generate at least one runnable artifact such as a dbt schema test, SQL assertion, or supported DataHub assertion definition.
-- Parse and validate generated code before running it.
-- Place generated examples under `examples/generated/`.
+- Emit the two predesigned runnable SQL controls used by the MVP.
+- Parse and validate the emitted SQL before running it.
+- Place emitted examples under `examples/generated/`.
 - Execute the new control and rerun the identical seeded campaign.
-- Write supported coverage/status context back to DataHub.
+- Prove the supported DataHub assertion path separately through a reversible transaction.
 
 ## Suggested architecture
 
@@ -108,7 +110,7 @@ Campaign UI
       -> seeded fault adapter registry
       -> pipeline/assertion runner
       -> coverage scorer
-      -> test-generation and validation service
+      -> deterministic control builder and validator
       -> restoration verifier
       -> DataHub writeback + campaign evidence store
 ```
@@ -118,7 +120,7 @@ Suggested stack:
 - Python 3.12, FastAPI, Pydantic, NetworkX, pytest.
 - React, TypeScript, Vite, lineage/campaign visualization.
 - DuckDB and SQL transformations for a fast deterministic demo.
-- dbt Core if setup remains reliable; otherwise generate and run standalone SQL tests while including dbt examples.
+- DuckDB SQL for the MVP's emitted standalone controls; dbt export remains future work.
 - SQLite for campaign state and receipts.
 - Docker Compose for DataHub and the app.
 - Optional LLM for fault hypotheses and test drafting, with deterministic templates as fallback.
@@ -147,7 +149,7 @@ Suggested stack:
 - baseline controls
 - detection matrix
 - weighted coverage score
-- generated controls
+- emitted controls
 - rerun matrix and score delta
 - DataHub writeback receipt
 
@@ -157,7 +159,7 @@ Suggested stack:
 - Deny unknown hosts, databases, or schemas.
 - Use dedicated demo credentials with minimal privileges.
 - Snapshot fixtures before a campaign.
-- Restore in a `finally` path even when detection or generation fails.
+- Restore in a `finally` path even when detection or control execution fails.
 - Verify post-restore checksums.
 - Require approval before injection.
 
@@ -169,7 +171,7 @@ Suggested stack:
 - Deterministic campaign manifest and blast-radius view.
 - Safety and approval gate.
 - Baseline detection matrix.
-- At least one generated, validated, and executed control.
+- Two predesigned, validated, and executed controls.
 - Repeat campaign showing a score improvement.
 - Automatic verified restoration.
 - DataHub writeback.
@@ -196,16 +198,17 @@ Suggested stack:
 - [ ] Three distinct seeded faults execute.
 - [ ] Existing controls catch the intentionally designed baseline subset.
 - [ ] Coverage scoring is deterministic and testable.
-- [ ] At least one generated control is syntactically validated and executed.
+- [ ] The emitted control artifact is syntactically validated and executed.
 - [ ] The identical rerun shows a measurable improvement.
 - [ ] Fixtures return to matching baseline checksums.
 - [ ] Results are visibly written to DataHub.
-- [ ] Tests cover safety, injection, scoring, generation validation, and restoration.
+- [ ] Tests cover safety, injection, scoring, emitted-control validation, and restoration.
 
 ## Competitive positioning
 
 Infrastructure chaos tools and data observability products already exist. The defensible claim is:
 
-> Lineage Fuzzer uses DataHub's graph to generate high-impact semantic data faults and prove which controls detect them.
+> Lineage Fuzzer uses DataHub's graph to constrain high-impact semantic fault campaigns and prove
+> which controls detect them.
 
 Do not claim to invent chaos engineering or data assertions. Demonstrate why their composition through the lineage graph is new and useful.

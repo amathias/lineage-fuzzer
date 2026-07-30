@@ -2,7 +2,9 @@
 
 ## Mission
 
-Build a working, judge-ready vertical slice of Lineage Fuzzer: a DataHub-powered agent that safely injects semantic data faults, measures detection coverage, generates missing controls, and records the improvement.
+Build a working, judge-ready vertical slice of Lineage Fuzzer: a DataHub-powered agent that safely
+injects semantic data faults, measures detection coverage, emits validated deterministic controls
+for the MVP's designed gaps, and proves restoration.
 
 ## Read first
 
@@ -21,15 +23,16 @@ Before modifying code, read these files completely:
 - Support at least three genuinely different semantic fault types.
 - Predict blast radius before injection and compare it with observed effects.
 - Measure which existing controls detect each fault.
-- Generate at least one runnable test artifact, execute it, and show improved coverage.
+- Emit at least one runnable test artifact, execute it, and show improved coverage.
 - Restore the fixture state after every campaign.
 
 ## Engineering principles
 
 - Safety is a product feature: default-deny any target not marked as a sandbox.
 - Use seeded randomness so the demo and tests are reproducible.
-- Keep deterministic injection and scoring separate from LLM explanation and test drafting.
-- Validate generated SQL or test code before execution.
+- Keep deterministic injection, control selection, and scoring separate from optional LLM
+  explanation or future test drafting.
+- Validate emitted SQL or test code before execution.
 - Make every campaign replayable from a manifest.
 - Keep secrets in environment variables and provide `.env.example`.
 - Test sandbox enforcement, restoration, fault manifests, scoring, code validation, and reruns.
@@ -62,7 +65,9 @@ Before modifying code, read these files completely:
 
 ## Definition of done
 
-A reviewer can load the demo graph, select a safe campaign, see the predicted blast radius, inject three faults, observe baseline detection coverage, generate and run missing tests, rerun the campaign at full coverage, confirm fixture restoration, and inspect DataHub writeback.
+A reviewer can load the demo graph, inspect a safe campaign, see the predicted blast radius, inject
+three faults, observe baseline detection coverage, run the two emitted controls, rerun the campaign
+at full coverage, confirm fixture restoration, and inspect the separate DataHub writeback proof.
 
 ## Submission guardrails
 
