@@ -57,7 +57,7 @@ The result is deliberately narrower and more useful than a generic “AI data te
 detection coverage for explicit semantic failures on one isolated fixture. It does not claim
 that a finite campaign proves an entire production stack is reliable.
 
-## How we use DataHub
+## How I use DataHub
 
 DataHub is the campaign's source of truth, not a decorative catalog lookup.
 
@@ -145,20 +145,20 @@ the repository README.
 
 Real MCP responses included schema fields in a different non-semantic order, governance entities
 inside lineage facets, and two exact downstream envelope shapes for nonempty and empty results.
-We tightened parsers around the pinned response locations while continuing to reject duplicates,
+I tightened parsers around the pinned response locations while continuing to reject duplicates,
 foreign URNs, pagination, missing fields, contradictory metadata, and ambiguous envelopes.
 
 ### Distinguishing product failures from infrastructure failures
 
 An approval-bound reset completed all writes but its old verifier traversed GraphQL through
-tombstoned datasets. We replaced that verification with exact direct status reads and proved an
+tombstoned datasets. I replaced that verification with exact direct status reads and proved an
 idempotent zero-write recovery. Later, shared search failures were traced to an OpenSearch process
 outage; after the backend recovered, the unchanged seed and live capture succeeded. The product
 continued to fail closed rather than converting unavailable search into false success.
 
 ### Making a destructive-looking demo genuinely safe
 
-Every fault is deterministic and reversible, but that is not enough. We bound the target through
+Every fault is deterministic and reversible, but that is not enough. I bound the target through
 DataHub metadata, a physical path allowlist, a manifest approval, single-flight execution, and
 checksum verification. Evidence is content-addressed so a rerun cannot rewrite history.
 
@@ -181,14 +181,14 @@ clean data, and then detect the intended fault before they count toward improved
   foreign project state.
 - Shipped a public, live-context-gated judge experience and a reproducible Apache-2.0 repository.
 
-## What we learned
+## What I learned
 
 Metadata-aware agents are strongest when metadata is executable policy. The same lineage that
 predicts business impact can constrain a fault target; the same assertions that describe current
 quality can become a measurable coverage baseline; and provenance can prevent a stale snapshot
 from authorizing a new mutation.
 
-We also learned that “restore” is not one operation. It needs a snapshot, an unconditional path,
+I also learned that “restore” is not one operation. It needs a snapshot, an unconditional path,
 positive postconditions, idempotent recovery, and evidence that neighboring namespaces did not
 change.
 
