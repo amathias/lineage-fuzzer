@@ -6,8 +6,9 @@
 - **Date:** 2026-07-24
 
 Campaign manifests, safety decisions, fault injection, detection attribution, scoring, and
-restoration are deterministic application code. The MVP emits two predesigned controls and does
-not use a language model. Future model-drafted controls would still have to pass the same
+restoration are deterministic application code. The MVP generates two bounded controls from
+captured DataHub field types, measured gaps, and clean-data profiles; it does not use a language
+model. Future model-drafted controls would still have to pass the same
 deterministic validation before execution.
 
 This keeps campaigns replayable and prevents model output from bypassing safety controls.
@@ -118,9 +119,10 @@ cross-fault contamination.
 - **Status:** Accepted
 - **Date:** 2026-07-25
 
-The MVP builder deterministically emits one DuckDB SQL artifact containing two predesigned controls
-for the measured amount-range and partition-freshness gaps. Before execution, the validator
-requires a single read-only statement, only the approved `raw.orders` relation, and the expected
+The MVP builder deterministically emits one DuckDB SQL artifact containing two controls compiled
+from captured DataHub field types, measured amount-range and partition-freshness gaps, and clean
+profile boundaries. The artifact records context, manifest, and profile hashes. Before execution,
+the validator requires a single read-only statement, only the approved `raw.orders` relation, and the expected
 control IDs. Mutation, attachment, file access, installation, pragma, and multi-statement forms are
 denied.
 

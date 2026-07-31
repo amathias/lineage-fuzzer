@@ -5,7 +5,8 @@
 Lineage Fuzzer is a DataHub-powered chaos-engineering agent for data reliability. It uses live
 lineage, schemas, ownership, and existing assertions to constrain a deterministic semantic-fault
 campaign, injects reproducible faults into an isolated fixture, measures detection coverage,
-selects validated controls for two designed gaps, reruns the campaign, and proves restoration.
+generates validated controls from DataHub schema metadata for two gaps, reruns the campaign, and
+proves restoration.
 
 ## Three-minute demo target
 
@@ -42,8 +43,8 @@ Show the fault-by-control matrix: one of three caught.
 Show the two emitted SQL controls, validation on clean data, and execution against the faults.
 Rerun the same seed and show three of three detected.
 
-> The current MVP selects two predesigned deterministic controls after measuring the gaps,
-> validates them, and proves the improvement using the identical campaign.
+> The generator combines captured DataHub field types, the two measured gaps, and clean-profile
+> boundaries into runnable SQL, validates the artifact, and proves it on the identical campaign.
 
 ### 2:17–2:36 — Restore and write back
 
@@ -105,7 +106,7 @@ The innovation is lineage-guided semantic fault injection and test-gap closure�
 - “Runs safely against any production system.”
 - “Replaces data observability.”
 - “Generated tests are always correct.”
-- “The current controls are dynamically synthesized.”
+- “A language model writes arbitrary tests.”
 
 Prefer: “Measures detection coverage for explicit reproducible campaigns on isolated fixtures.”
 

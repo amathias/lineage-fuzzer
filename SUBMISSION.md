@@ -47,9 +47,9 @@ Lineage Fuzzer runs one deterministic, approval-bound campaign:
    a 100x amount-scale change, a 45-day stale partition, and a 10% customer-key null surge.
 5. It compares predicted versus observed changed-table checksums and measures the controls
    actually captured from DataHub.
-6. The baseline detects 1 of 3 faults. The agent packages two predesigned, validated, runnable,
-   read-only SQL controls for the measured gaps, executes them, and reruns the identical seeded
-   campaign.
+6. The baseline detects 1 of 3 faults. The agent generates two validated, runnable, read-only SQL
+   controls from the captured DataHub schema, the measured gaps, and a clean-data profile, then
+   executes them and reruns the identical seeded campaign.
 7. Coverage improves from 33.3% to 100%, every predicted blast radius matches the observed
    effects, and all six fixture checksums return to baseline.
 8. The manifest, context digest, matrices, emitted SQL, replay digest, and restoration proof
@@ -136,6 +136,16 @@ $env:LINEAGE_FUZZER_INJECTION_ENABLED = "true"
 .venv\Scripts\lineage-fuzzer.exe serve --host 127.0.0.1 --port 8104
 ```
 
+macOS/Linux equivalent:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[dev,datahub]'
+.venv/bin/python -m lineage_fuzzer.pipeline_cli seed
+export LINEAGE_FUZZER_INJECTION_ENABLED=true
+.venv/bin/lineage-fuzzer serve --host 127.0.0.1 --port 8104
+```
+
 That local flow is intentionally labeled `local-fixture-topology`; it is useful for development
 but is not presented as live DataHub evidence. Connecting another deployment requires an
 open-source DataHub instance, the supported MCP endpoint, a least-privilege runtime credential,
@@ -167,10 +177,11 @@ checksum verification. Evidence is content-addressed so a rerun cannot rewrite h
 
 ### Emitting control code that can be trusted
 
-The current MVP deliberately uses two predesigned deterministic controls for the amount-scale and
-staleness gaps rather than free-form synthesis. Each control is selected only after the gap is
-measured, must parse as one read-only statement, may reference only the approved table, must pass
-against clean data, and must detect its intended fault before it counts toward improved coverage.
+The deterministic generator compiles the amount-scale and staleness gaps into typed control
+specifications using captured DataHub field names and types plus clean-profile boundaries. Each
+control is generated only after the gap is measured, must parse as one read-only statement, may
+reference only the approved table, must pass against clean data, and must detect its intended fault
+before it counts toward improved coverage.
 
 ## Accomplishments
 

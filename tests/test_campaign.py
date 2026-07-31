@@ -14,6 +14,7 @@ from lineage_fuzzer.campaign.context import (
 )
 from lineage_fuzzer.campaign.generation import (
     GeneratedSQLViolation,
+    build_control_specs,
     validate_generated_sql,
 )
 from lineage_fuzzer.campaign.runner import (
@@ -21,6 +22,8 @@ from lineage_fuzzer.campaign.runner import (
     CampaignRunner,
 )
 from lineage_fuzzer.config import Settings
+from lineage_fuzzer.domain.models import FaultKind
+from lineage_fuzzer.pipeline import CommerceFixture
 from lineage_fuzzer.safety import SafetyViolation
 from tests.live_contract import (
     capture_pinned_context,
@@ -89,6 +92,11 @@ def test_campaign_proves_one_to_three_coverage_and_exact_restoration(
     }
     assert all(row.detected for row in report.improved.matrix)
     assert report.generated_artifact.clean_execution_passed is True
+    assert report.generated_artifact.generated_from_faults == (
+        "numeric_scale",
+        "stale_partition",
+    )
+    assert "datahub-schema-bound" in report.generated_artifact.policy_checks
     assert (
         tmp_path
         / "examples"
@@ -168,6 +176,37 @@ def test_campaign_rejects_wrong_approval_before_fixture_mutation(tmp_path: Path)
 def test_generated_sql_policy_rejects_mutating_or_unscoped_sql(sql: str) -> None:
     with pytest.raises(GeneratedSQLViolation):
         validate_generated_sql(sql)
+
+
+def test_control_generation_refuses_contradictory_datahub_column_type(
+    tmp_path: Path,
+) -> None:
+    runner = _runner(tmp_path)
+    manifest = runner.plan()
+    commerce_fixture = CommerceFixture(
+        runner.database_path,
+        fixture_root=runner.fixture_root,
+    )
+    commerce_fixture.seed(seed=manifest.seed)
+    entities = list(runner.context.entities)
+    raw_orders_index = next(
+        index for index, entity in enumerate(entities) if entity["urn"] == RAW_ORDERS_URN
+    )
+    raw_orders = dict(entities[raw_orders_index])
+    raw_orders["schemaFieldTypes"] = {
+        **raw_orders["schemaFieldTypes"],
+        "amount_cents": "VARCHAR",
+    }
+    entities[raw_orders_index] = raw_orders
+    forged = runner.context.model_copy(update={"entities": tuple(entities)})
+
+    with pytest.raises(GeneratedSQLViolation, match="does not type amount_cents as numeric"):
+        build_control_specs(
+            commerce_fixture,
+            context=forged,
+            manifest=manifest,
+            gap_faults=(FaultKind.NUMERIC_SCALE,),
+        )
 
 
 def test_demo_context_predicts_all_downstream_consumers() -> None:

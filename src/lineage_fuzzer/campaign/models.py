@@ -84,6 +84,10 @@ class GeneratedControlArtifact(BaseModel):
     policy_checks: tuple[str, ...]
     clean_violations: dict[str, int]
     clean_execution_passed: bool
+    source_context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_profile_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    generated_from_faults: tuple[FaultKind, ...]
 
 
 class CampaignExecutionReport(BaseModel):

@@ -34,8 +34,8 @@ Ingest lineage, schemas, owners, and existing assertions into DataHub. Mark all 
 - create a stale partition;
 - break a join key or cause a null surge.
 
-Measure detection, emit the MVP's two predesigned controls for the measured gaps, rerun, and reach
-full coverage.
+Measure detection, generate two controls from the captured schema, measured gaps, and clean-data
+profile, rerun, and reach full coverage.
 
 ## Core user journey
 
@@ -47,7 +47,8 @@ full coverage.
 6. User approves the campaign.
 7. Injector applies seeded faults and runs the normal pipeline.
 8. Observer records which controls fired and compares predicted versus observed impact.
-9. Agent selects and emits the two predesigned SQL controls for the measured gaps.
+9. Agent generates two typed SQL controls from DataHub schema metadata and clean profiles for the
+   measured gaps.
 10. Validator checks the emitted artifact, executes it, and reruns the campaign. A separate
     reversible assertion exercise proves the supported DataHub write path.
 11. Restorer proves the fixture returned to baseline.
@@ -93,7 +94,8 @@ Each fault must:
 
 ### Control emission
 
-- Emit the two predesigned runnable SQL controls used by the MVP.
+- Generate two runnable SQL controls from captured field types, measured gaps, and bounded clean
+  profiles.
 - Parse and validate the emitted SQL before running it.
 - Place emitted examples under `examples/generated/`.
 - Execute the new control and rerun the identical seeded campaign.
@@ -171,7 +173,7 @@ Suggested stack:
 - Deterministic campaign manifest and blast-radius view.
 - Safety and approval gate.
 - Baseline detection matrix.
-- Two predesigned, validated, and executed controls.
+- Two metadata-grounded, validated, and executed controls.
 - Repeat campaign showing a score improvement.
 - Automatic verified restoration.
 - DataHub writeback.

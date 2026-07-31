@@ -113,8 +113,9 @@ customer-key null surge. Keep the graph visible.
 
 > For each fault, Lineage Fuzzer snapshots the fixture, mutates deterministic rows, rebuilds the
 > downstream tables, compares observed checksums with the lineage prediction, runs the controls
-> captured from DataHub, and restores in a finally path. It then selects two predesigned read-only
-> SQL controls for the measured gaps and repeats the identical campaign.
+> captured from DataHub, and restores in a finally path. It then generates two read-only SQL
+> controls from the captured field types, measured gaps, and clean profile before repeating the
+> identical campaign.
 
 If the result appears early, pause on the complete matrix rather than rushing ahead.
 
@@ -141,8 +142,8 @@ read-only `SELECT`, and the approved `raw.orders` table.
 
 **Narration:**
 
-> This is the emitted artifact judges can inspect and run: two predesigned read-only SQL controls
-> validated on clean data and executed against the two missed faults. The repository also includes
+> This is the generated artifact judges can inspect and run: two metadata-grounded read-only SQL
+> controls validated on clean data and executed against the two missed faults. The repository also includes
 > the manifest and before-and-after coverage examples.
 
 ### 2:31-2:44 — Close on restored proof

@@ -11,9 +11,9 @@ Demo video: **[public on YouTube](https://youtu.be/wcDgAAUbO08)** (2:04, English
 
 Lineage Fuzzer is a DataHub-powered semantic chaos agent for data reliability. It reads one exact
 six-dataset sandbox graph, predicts downstream impact, injects three deterministic faults into a
-disposable DuckDB fixture, measures which cataloged controls detect them, emits two predesigned
-read-only SQL controls for the measured gaps, reruns the same campaign, and verifies complete
-restoration.
+disposable DuckDB fixture, measures which cataloged controls detect them, and generates two
+read-only SQL controls from the captured DataHub schema, measured gaps, and clean-data profile.
+It executes those controls, reruns the same campaign, and verifies complete restoration.
 
 ![Lineage Fuzzer console showing baseline coverage improving from one of three to three of three faults detected](docs/assets/judge-console.png)
 
@@ -81,12 +81,31 @@ python -m venv .venv
 .venv\Scripts\python.exe scripts\scan_secrets.py
 ```
 
+macOS/Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev,datahub]"
+python -m pytest -q
+python -m ruff check .
+python scripts/scan_secrets.py
+```
+
 Run the offline, explicitly local judge demo:
 
 ```powershell
 $env:LINEAGE_FUZZER_INJECTION_ENABLED = "true"
 .venv\Scripts\python.exe -m lineage_fuzzer.pipeline_cli seed
 .venv\Scripts\lineage-fuzzer.exe serve --host 127.0.0.1 --port 8104
+```
+
+On macOS/Linux after activating the environment:
+
+```bash
+export LINEAGE_FUZZER_INJECTION_ENABLED=true
+python -m lineage_fuzzer.pipeline_cli seed
+lineage-fuzzer serve --host 127.0.0.1 --port 8104
 ```
 
 Open `http://127.0.0.1:8104`. The page remains honest about

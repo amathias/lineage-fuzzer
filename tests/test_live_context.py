@@ -81,6 +81,12 @@ def test_capture_accepts_observed_alphabetical_schema_order_and_canonicalizes(
         "segment",
         "country_code",
     ]
+    assert raw_customers["schemaFieldTypes"] == {
+        "customer_id": "INTEGER",
+        "customer_name": "VARCHAR",
+        "segment": "VARCHAR",
+        "country_code": "VARCHAR",
+    }
 
 
 def test_capture_ignores_governance_entities_outside_lineage_results(

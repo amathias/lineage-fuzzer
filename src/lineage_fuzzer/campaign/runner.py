@@ -12,7 +12,6 @@ from lineage_fuzzer.campaign.context import (
     context_sha256,
 )
 from lineage_fuzzer.campaign.generation import (
-    GENERATED_CONTROLS,
     GeneratedControlService,
 )
 from lineage_fuzzer.campaign.models import (
@@ -118,16 +117,26 @@ class CampaignRunner:
                 )
 
             fixture.restore(snapshot)
-            generated_artifact = self.artifact_service.generate_and_validate(fixture)
+            measured_gaps = tuple(
+                run.kind for run in baseline.fault_runs if not run.detected
+            )
+            generated_bundle = self.artifact_service.generate_and_validate(
+                fixture,
+                context=self.context,
+                manifest=manifest,
+                gap_faults=measured_gaps,
+            )
+            generated_artifact = generated_bundle.artifact
             improved_runs = self._run_phase(
                 fixture=fixture,
                 snapshot=snapshot,
                 manifest=manifest,
                 approval=approval,
                 target=target,
-                controls=self.baseline_controls + GENERATED_CONTROLS,
+                controls=self.baseline_controls + generated_bundle.controls,
                 safety_checks=controller_safety.checks,
                 execute_artifact=True,
+                generated_controls=generated_bundle.controls,
             )
             improved = coverage_report("improved", improved_runs)
             if improved.detected_faults != improved.total_faults:
@@ -172,6 +181,7 @@ class CampaignRunner:
         controls: tuple[ControlDefinition, ...],
         safety_checks: tuple[str, ...],
         execute_artifact: bool,
+        generated_controls: tuple[ControlDefinition, ...] = (),
     ) -> tuple[FaultRunEvidence, ...]:
         runs: list[FaultRunEvidence] = []
         for specification in manifest.faults:
@@ -205,6 +215,7 @@ class CampaignRunner:
                     self.artifact_service.execute(
                         self.artifact_service.artifact_path,
                         fixture,
+                        controls=generated_controls,
                     )
                     if execute_artifact
                     else {}

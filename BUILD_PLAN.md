@@ -67,7 +67,8 @@ Exit condition: the baseline campaign produces a stable, truthful score.
 
 ## Phase 4: Emit and execute missing controls
 
-- Emit the two predesigned deterministic controls for the measured gaps.
+- Generate two deterministic controls from captured DataHub field types, measured gaps, and clean
+  profiles.
 - Parse the emitted SQL and enforce read-only/sandbox constraints.
 - Execute the emitted controls against clean and faulty fixtures.
 - Save runnable examples under `examples/generated/`.

@@ -33,7 +33,6 @@ from lineage_fuzzer.datahub.fixture_contract import (
     TABLE_URNS,
     assertion_payload,
     downstreams_for,
-    expected_schema_fields,
 )
 from lineage_fuzzer.datahub.mcp import REQUIRED_CONTEXT_TOOLS
 from lineage_fuzzer.datahub.receipts import canonical_json, sha256_json
@@ -134,9 +133,11 @@ class LiveDataHubContextReader:
                 {"urn": urn, "limit": 100, "offset": 0},
             )
             raw_digests[f"mcp.schema:{urn}"] = sha256_json(schema_response)
-            fields = _schema_field_paths(schema_response)
-            expected_fields = expected_schema_fields(urn)
-            if len(fields) != len(set(fields)) or set(fields) != set(expected_fields):
+            fields = _schema_field_contracts(schema_response)
+            expected_fields = TABLE_SCHEMAS[table_name]
+            if len(fields) != len({field[0] for field in fields}) or set(fields) != set(
+                expected_fields
+            ):
                 raise ContextCaptureError(
                     f"DataHub schema is incomplete or contradictory for {urn}"
                 )
@@ -201,7 +202,7 @@ def demo_context_snapshot() -> DataHubContextSnapshot:
         _normalized_entity(
             table_name,
             urn,
-            tuple(field[0] for field in TABLE_SCHEMAS[table_name]),
+            TABLE_SCHEMAS[table_name],
         )
         for table_name, urn in TABLE_URNS.items()
     )
@@ -378,7 +379,7 @@ def validate_live_context_snapshot(context: DataHubContextSnapshot) -> None:
         _normalized_entity(
             table_name,
             urn,
-            tuple(field[0] for field in TABLE_SCHEMAS[table_name]),
+            TABLE_SCHEMAS[table_name],
         )
         for table_name, urn in TABLE_URNS.items()
     )
@@ -440,7 +441,7 @@ def _verified_catalog_state(settings: Settings, workspace_root: Path) -> dict[st
 def _normalized_entity(
     table_name: str,
     urn: str,
-    fields: tuple[str, ...],
+    fields: tuple[tuple[str, str, bool], ...],
 ) -> dict[str, Any]:
     return {
         "urn": urn,
@@ -451,7 +452,9 @@ def _normalized_entity(
         "domain": DOMAIN_URN,
         "tags": ["lineage-fuzzer-sandbox", "project-lineage-fuzzer"],
         "customProperties": {"project_slug": "lineage-fuzzer", "sandbox": "true"},
-        "schemaFields": list(fields),
+        "schemaFields": [field[0] for field in fields],
+        "schemaFieldTypes": {field[0]: field[1] for field in fields},
+        "schemaFieldNullable": {field[0]: field[2] for field in fields},
     }
 
 
@@ -486,17 +489,23 @@ def _validate_live_entity(
         raise ContextCaptureError(f"DataHub entity is soft-deleted: {urn}")
 
 
-def _schema_field_paths(value: Any) -> tuple[str, ...]:
-    fields: list[str] = []
+def _schema_field_contracts(value: Any) -> tuple[tuple[str, str, bool], ...]:
+    fields: list[tuple[str, str, bool]] = []
     if isinstance(value, dict):
         field_path = value.get("fieldPath")
+        native_type = value.get("nativeDataType")
+        nullable = value.get("nullable")
         if isinstance(field_path, str):
-            fields.append(field_path)
+            if not isinstance(native_type, str) or not isinstance(nullable, bool):
+                raise ContextCaptureError(
+                    "DataHub schema field is missing its type or nullability"
+                )
+            fields.append((field_path, native_type.upper(), nullable))
         for child in value.values():
-            fields.extend(_schema_field_paths(child))
+            fields.extend(_schema_field_contracts(child))
     elif isinstance(value, list):
         for child in value:
-            fields.extend(_schema_field_paths(child))
+            fields.extend(_schema_field_contracts(child))
     return tuple(fields)
 
 

@@ -12,6 +12,10 @@ python -m venv .venv
 .venv\Scripts\lineage-fuzzer.exe serve
 ```
 
+On macOS/Linux, replace `.venv\Scripts\python.exe` with `.venv/bin/python`, replace
+`.venv\Scripts\lineage-fuzzer.exe` with `.venv/bin/lineage-fuzzer`, and use `export NAME=value`
+for environment variables. The commands and safety gates are otherwise identical.
+
 The API health check is available at `http://127.0.0.1:8000/api/health`.
 
 ## DataHub integration probe
