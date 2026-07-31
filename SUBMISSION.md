@@ -19,7 +19,7 @@ restoration.
 
 **Public source:** [github.com/amathias/lineage-fuzzer](https://github.com/amathias/lineage-fuzzer)
 
-**Public demo video:** [youtu.be/d_KTZtGQIjg](https://youtu.be/d_KTZtGQIjg) (2:29, English captions)
+**Public demo video:** [youtu.be/J2QWXXvEzHw](https://youtu.be/J2QWXXvEzHw) (2:28, English captions)
 
 **License:** Apache License 2.0
 
