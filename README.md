@@ -4,10 +4,10 @@
 
 [Open the live judge console](https://fuzzer.datahub-hackathon.aaronmathias.com) ·
 [View the source](https://github.com/amathias/lineage-fuzzer) ·
-[Watch the public demo](https://youtu.be/wcDgAAUbO08) ·
+[Watch the public demo](https://youtu.be/d_KTZtGQIjg) ·
 [Follow the under-three-minute recording runbook](docs/JUDGE_DEMO.md)
 
-Demo video: **[public on YouTube](https://youtu.be/wcDgAAUbO08)** (2:04, English captions).
+Demo video: **[public on YouTube](https://youtu.be/d_KTZtGQIjg)** (2:29, English captions).
 
 Lineage Fuzzer is a DataHub-powered semantic chaos agent for data reliability. It reads one exact
 six-dataset sandbox graph, predicts downstream impact, injects three deterministic faults into a
