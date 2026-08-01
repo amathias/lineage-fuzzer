@@ -67,7 +67,7 @@ candidate `92db02471a6bdb517be2db934a146b71509fe442`.
 |---|---|
 | Public application | `https://fuzzer.datahub-hackathon.aaronmathias.com` |
 | Public repository | `https://github.com/amathias/lineage-fuzzer` |
-| Public demo video | `https://youtu.be/J2QWXXvEzHw` (2:28, published English captions) |
+| Public demo video | `https://youtu.be/eAmFwXIyRi4` (2:28, published English captions) |
 | Devpost copy | `SUBMISSION.md` |
 | Recording runbook | `docs/JUDGE_DEMO.md` |
 | Recording target | `2:45`; hard stop `2:55` |

@@ -112,7 +112,7 @@ Prefer: “Measures detection coverage for explicit reproducible campaigns on is
 
 ## Recording checklist
 
-- [x] Video is public and under three minutes: <https://youtu.be/J2QWXXvEzHw> (2:28).
+- [x] Video is public and under three minutes: <https://youtu.be/eAmFwXIyRi4> (2:28).
 - [ ] Sandbox protection is visible but concise.
 - [ ] Campaign seed and three fault types are legible.
 - [ ] Baseline and improved matrices use the same campaign.
